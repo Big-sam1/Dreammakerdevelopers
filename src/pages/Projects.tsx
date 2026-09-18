@@ -3,6 +3,7 @@ import { ArrowUpRightIcon, SparklesIcon, ChevronLeftIcon, ChevronRightIcon } fro
 import { PageHero } from '../components/PageHero';
 import { CTASection } from '../components/CTASection';
 import { useCMS } from '../context/CMSContext';
+import projectsCtaImage from '../data/5.png';
 
 type Project = {
   id: string;
@@ -369,7 +370,7 @@ export function Projects() {
       <CTASection
         title="Inspired by what you see?"
         description="Let's build your next flagship product with the same engineering rigor, modern design craft, and scalable architecture."
-        image="/67bedf41-d607-4532-8e95-cdbc38a213b5.jpg"
+        image={projectsCtaImage}
         imageAlt="Dream Maker Developers reviewing project deliverables"
       />
     </>

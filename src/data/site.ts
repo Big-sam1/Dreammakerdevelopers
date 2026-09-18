@@ -4,7 +4,7 @@ export const company = {
   tagline:
   'A technology and innovation company that designs and develops cutting-edge digital solutions.',
   email: 'hello@dreammakerdev.com',
-  phone: '+1 (555) 084 2210',
+  phone: '+250780966163',
   address: 'Innovation Hub, 24 Builder Street, Suite 300',
   hours: 'Mon – Fri, 9:00 AM – 6:00 PM'
 };

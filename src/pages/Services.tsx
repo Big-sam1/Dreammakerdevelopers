@@ -5,6 +5,8 @@ import { Eyebrow } from '../components/Eyebrow';
 import { ServiceIcon } from '../components/ServiceIcon';
 import { CTASection } from '../components/CTASection';
 import { useCMS } from '../context/CMSContext';
+import engagementModelsImage from '../data/9.png';
+import servicesCtaImage from '../data/10.png';
 
 export function Services() {
   const { cms } = useCMS();
@@ -123,7 +125,7 @@ export function Services() {
             </ul>
           </div>
           <img
-            src="/5bfe9030-9ed1-4761-a332-2c3df8f3bfbb.jpg"
+            src={engagementModelsImage}
             alt="A web dashboard and mobile app built by Dream Maker Developers"
             className="h-72 w-full rounded-3xl object-cover lg:h-[440px]"
             loading="lazy" />
@@ -135,7 +137,7 @@ export function Services() {
       <CTASection
         title="Ready to discuss your project scope?"
         description="Whether you need a dedicated development squad, a fixed-milestone digital build, or high-level technical advisory, our engineering leads are ready."
-        image="/5bfe9030-9ed1-4761-a332-2c3df8f3bfbb.jpg"
+        image={servicesCtaImage}
         imageAlt="Dream Maker Developers digital software development dashboard"
       />
     </>);

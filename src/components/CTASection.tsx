@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRightIcon, PhoneIcon } from 'lucide-react';
 import { company } from '../data/site';
+import defaultCtaImage from '../data/5.png';
 
 export type CTASectionProps = {
   title?: string;
@@ -15,7 +16,7 @@ export type CTASectionProps = {
 export function CTASection({
   title = "Have an idea? Let's make it real.",
   description = "Tell us what you're building. We'll come back with a clear plan, an honest timeline, and a team ready to start.",
-  image = "/256842fa-b28b-4563-986d-bcc0bf612542.jpg",
+  image = defaultCtaImage,
   imageAlt = "The Dream Maker Developers studio at work",
   buttonText = "Start a project",
   buttonTo = "/start-project",

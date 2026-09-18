@@ -6,6 +6,8 @@ import { CTASection } from '../components/CTASection';
 import { process } from '../data/site';
 import { TypewriterText } from '../components/TypewriterText';
 import { useCMS } from '../context/CMSContext';
+import storyImage from '../data/7.png';
+import aboutCtaImage from '../data/8.png';
 
 const dmdStoryText = `Dream Maker Developers (DMD) specializes in software development, web and mobile applications, artificial intelligence, UI/UX design, branding, digital media, and IT consulting.
 
@@ -53,7 +55,7 @@ export function About() {
             </div>
           </div>
           <img
-            src="/3e957b1a-e5c2-4295-a84f-3a8e4e0af287.jpg"
+            src={storyImage}
             alt="The Dream Maker Developers team working together in the studio"
             className="animate-float-slow h-72 w-full rounded-3xl object-cover shadow-lg lg:h-[420px]"
             loading="lazy"
@@ -241,7 +243,7 @@ export function About() {
       <CTASection
         title="Ready to build your next breakthrough?"
         description="Partner with our dedicated team of architects, developers, and designers to turn your boldest ideas into production-ready digital reality."
-        image="/3e957b1a-e5c2-4295-a84f-3a8e4e0af287.jpg"
+        image={aboutCtaImage}
         imageAlt="Dream Maker Developers leadership and team"
       />
     </>
