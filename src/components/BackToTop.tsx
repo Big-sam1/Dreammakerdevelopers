@@ -55,7 +55,7 @@ export function BackToTop({ scrollContainerId, className = '' }: BackToTopProps)
       onClick={scrollToTop}
       aria-label="Back to top"
       title="Back to top"
-      className={`fixed bottom-4 right-4 sm:bottom-6 sm:right-6 lg:bottom-8 lg:right-8 z-40 flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 lg:w-12 lg:h-12 rounded-full bg-lime text-forest font-bold shadow-xl shadow-forest/25 border-2 border-forest/10 hover:bg-lime-dark hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer animate-fade-in group ${className}`}
+      className={`fixed bottom-4 left-4 sm:bottom-6 sm:left-6 lg:bottom-8 lg:left-8 z-40 flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 lg:w-12 lg:h-12 rounded-full bg-lime text-forest font-bold shadow-xl shadow-forest/25 border-2 border-forest/10 hover:bg-lime-dark hover:scale-110 active:scale-95 transition-all duration-300 cursor-pointer animate-fade-in group ${className}`}
     >
       <ChevronUp className="w-5 h-5 sm:w-6 sm:h-6 transition-transform duration-200 group-hover:-translate-y-0.5" />
     </button>

@@ -50,7 +50,7 @@ import {
   TeamMemberItem,
   BranchLocation,
 } from '../../context/CMSContext';
-import { makeCircularFavicon, uploadImageToSupabase } from '../../lib/supabase';
+import { makeCircularFavicon, saveCmsStateToSupabase, uploadImageToSupabase } from '../../lib/supabase';
 import { BackToTop } from '../../components/BackToTop';
 import mapsImage from '../../data/maps.png';
 
@@ -1733,6 +1733,7 @@ function AdminProfileSection({
     }
   );
   const [newPassword, setNewPassword] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   // Track the first persisted admin profile loaded from MongoDB.
   const initializedRef = React.useRef(false);
 
@@ -1749,10 +1750,19 @@ function AdminProfileSection({
     }
   }, [cms.adminProfile]);
 
+  const persistProfile = async (changes: Partial<typeof profile>) => {
+    const nextProfile = { ...cms.adminProfile, ...changes };
+    updateAdminProfile(nextProfile);
+    setIsSaving(true);
+    const saved = await saveCmsStateToSupabase({ ...cms, adminProfile: nextProfile });
+    setIsSaving(false);
+    showToast(saved ? 'Profile saved permanently and sidebar updated.' : 'Could not save profile. Please try again.');
+    return saved;
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    // The profile is persisted as part of the MongoDB CMS state.
-    updateAdminProfile(profile);
+    await persistProfile(profile);
 
     // Server login credentials are deliberately configured outside the browser.
     if (newPassword) {
@@ -1761,7 +1771,6 @@ function AdminProfileSection({
       return;
     }
 
-    showToast('Admin profile saved to Supabase.');
   };
 
   return (
@@ -1797,8 +1806,7 @@ function AdminProfileSection({
                       setProfile((prev) => ({ ...prev, avatar: url }));
                       // Keep the sidebar and every other admin view in sync
                       // immediately; the CMS provider persists this change.
-                      updateAdminProfile({ avatar: url });
-                      showToast('Avatar updated and synced everywhere!');
+                      void persistProfile({ avatar: url });
                     })
                   }
                   className="w-full text-xs file:mr-2 file:py-1.5 file:px-2.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-lime file:text-forest file:cursor-pointer"
@@ -1828,8 +1836,7 @@ function AdminProfileSection({
                       // Functional update to avoid stale closure
                       setProfile((prev) => ({ ...prev, portalLogo: url }));
                       // Push only the changed field so the sidebar portal logo updates immediately
-                      updateAdminProfile({ portalLogo: url });
-                      showToast('Portal logo updated & synced everywhere!');
+                      void persistProfile({ portalLogo: url });
                     })
                   }
                   className="w-full text-xs file:mr-2 file:py-1.5 file:px-2.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-lime file:text-forest file:cursor-pointer"
@@ -1890,7 +1897,7 @@ function AdminProfileSection({
         type="submit"
         className="px-6 py-3 rounded-xl bg-lime hover:bg-lime/90 text-forest font-semibold text-sm transition-all shadow-md cursor-pointer"
       >
-        Save Profile to MongoDB
+        {isSaving ? 'Saving…' : 'Save Profile Permanently'}
       </button>
     </form>
   );

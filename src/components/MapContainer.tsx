@@ -1,6 +1,5 @@
 import React from 'react';
 import { MapPinIcon, NavigationIcon, ExternalLinkIcon } from 'lucide-react';
-import mapsImage from '../data/maps.png';
 
 export function MapContainer() {
   return (
@@ -30,13 +29,14 @@ export function MapContainer() {
       </div>
 
       <div className="relative h-64 w-full bg-forest-deep md:h-72">
-        <img
-          src={mapsImage}
-          alt="Map showing Dream Maker Developers' regional presence"
-          className="h-full w-full object-contain"
-          decoding="async"
+        <iframe
+          title="Map of Kagarama, Kicukiro, Kigali, Rwanda"
+          src="https://www.google.com/maps?q=Kagarama%2C%20Kicukiro%2C%20Kigali%2C%20Rwanda&z=15&output=embed"
+          className="h-full w-full border-0"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+          allowFullScreen
         />
-        
         {/* Floating badge */}
         <div className="pointer-events-none absolute bottom-3 left-3 rounded-lg bg-forest/90 px-3 py-1.5 text-[11px] font-medium text-white backdrop-blur shadow-md">
           <span className="inline-block h-2 w-2 rounded-full bg-lime mr-1.5 animate-pulse" />
