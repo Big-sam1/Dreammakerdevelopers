@@ -67,7 +67,7 @@ async function saveCmsState(state) {
 }
 
 export default async function handler(req, res) {
-  const path = Array.isArray(req.query.path) ? req.query.path.join('/') : String(req.query.path || '');
+  const path = (req.url || '').split('?')[0].replace(/^\/api\//, '').replace(/^\//, '');
 
   try {
     if (path === 'admin/login' && req.method === 'POST') {
