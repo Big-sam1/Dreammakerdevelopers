@@ -2722,19 +2722,30 @@ function TestimonialsSection({
   const [newItem, setNewItem] = useState({ name: '', role: '', quote: '', image: '' });
   const [editing, setEditing] = useState<TestimonialItem | null>(null);
 
-  const handleCreate = (e: React.FormEvent) => {
+  const saveTestimonials = async (next: TestimonialItem[]) => {
+    const saved = await saveCmsStateToSupabase({ ...cms, testimonials: next });
+    if (!saved) {
+      showToast('Not saved: Supabase did not confirm the testimonial update. Please sign in again and retry.');
+      return false;
+    }
+    return true;
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItem.name || !newItem.quote) return;
-    addTestimonial({
+    const item: TestimonialItem = {
       id: `test-${Date.now()}`,
       name: newItem.name,
       role: newItem.role || 'Partner',
       quote: newItem.quote,
       image: newItem.image || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-    });
+    };
+    if (!await saveTestimonials([...cms.testimonials, item])) return;
+    addTestimonial(item);
     setShowAdd(false);
     setNewItem({ name: '', role: '', quote: '', image: '' });
-    showToast('Testimonial story added!');
+    showToast('Testimonial saved permanently to Supabase.');
   };
 
   const paginatedTestimonials = cms.testimonials.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -2805,7 +2816,7 @@ function TestimonialsSection({
           <div key={t.id} className={`border rounded-2xl p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 ${cardBgClass}`}>
             <div className="flex items-center gap-4 min-w-0">
               <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 border-2 border-lime">
-                <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
+                <img src={t.image} alt={t.name} onError={(event) => { event.currentTarget.src = '/favicon.png'; }} className="w-full h-full object-cover" />
               </div>
               <div>
                 <h4 className="text-sm font-bold">{t.name}</h4>
@@ -2823,8 +2834,13 @@ function TestimonialsSection({
                   className="hidden"
                   onChange={(e) =>
                     handleFileUpload(e, t.id, (url) => {
-                      updateTestimonial({ ...t, image: url });
-                      showToast(`Photo updated for ${t.name}`);
+                      const updated = { ...t, image: url };
+                      void saveTestimonials(cms.testimonials.map((item) => item.id === t.id ? updated : item)).then((saved) => {
+                        if (saved) {
+                          updateTestimonial(updated);
+                          showToast(`Photo for ${t.name} is permanently saved.`);
+                        }
+                      });
                     })
                   }
                 />
@@ -2850,7 +2866,7 @@ function TestimonialsSection({
 
       {editing && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/55 p-4">
-          <form onSubmit={(e) => { e.preventDefault(); updateTestimonial(editing); setEditing(null); showToast('Testimonial updated and saved.'); }} className={`w-full max-w-xl rounded-2xl border p-6 space-y-4 shadow-2xl ${cardBgClass}`}>
+          <form onSubmit={async (e) => { e.preventDefault(); if (await saveTestimonials(cms.testimonials.map((item) => item.id === editing.id ? editing : item))) { updateTestimonial(editing); setEditing(null); showToast('Testimonial saved permanently to Supabase.'); } }} className={`w-full max-w-xl rounded-2xl border p-6 space-y-4 shadow-2xl ${cardBgClass}`}>
             <div className="flex items-center justify-between"><h2 className="font-bold">Edit client testimonial</h2><button type="button" onClick={() => setEditing(null)}><X className="w-5 h-5" /></button></div>
             <input value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} className={`w-full rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Client name" />
             <input value={editing.role} onChange={(e) => setEditing({ ...editing, role: e.target.value })} className={`w-full rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Role" />
