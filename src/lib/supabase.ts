@@ -54,7 +54,10 @@ export async function saveCmsStateToSupabase(state: unknown): Promise<boolean> {
       },
       body: JSON.stringify({ state }),
     });
-    if (res.ok) return true;
+    // A static-hosting rewrite can return index.html with HTTP 200. Only the
+    // API's explicit JSON acknowledgement represents a successful save.
+    const result = await res.json().catch(() => null);
+    if (res.ok && result?.ok === true) return true;
   } catch {
     // If backend server is unreachable (e.g. static Vercel without serverless),
     // state is already safely persisted in localStorage and BroadcastChannel.
@@ -82,8 +85,8 @@ export async function loginWithSupabase(
     });
 
     if (res.ok) {
-      const result = await res.json();
-      if (result.token) {
+      const result = await res.json().catch(() => null);
+      if (result?.token) {
         localStorage.setItem('dmd_admin_token', result.token);
         return { success: true };
       }
@@ -95,19 +98,9 @@ export async function loginWithSupabase(
     // Server endpoint not reachable (e.g. running on Vercel static hosting)
   }
 
-  // Direct Vercel / serverless fallback authentication:
-  const authorizedEmail = 'admin@dreammakerdevelopers.com';
-  const authorizedPass  = 'Northstar!DMD-2026-Admin';
-
-  if (normalizedEmail === authorizedEmail && password === authorizedPass) {
-    const fallbackToken = 'dmd_token_' + btoa(`${normalizedEmail}:${Date.now()}`);
-    localStorage.setItem('dmd_admin_token', fallbackToken);
-    return { success: true };
-  }
-
   return {
     success: false,
-    error: 'Invalid credentials. Please check your admin email and password.',
+    error: 'Admin service is unavailable. Please try again shortly.',
   };
 }
 
@@ -133,15 +126,17 @@ export async function uploadImageToSupabase(file: File): Promise<string> {
       body: file,
     });
     if (res.ok) {
-      const result = await res.json();
-      if (result?.url) return result.url as string;
+      const result = await res.json().catch(() => null);
+      if (typeof result?.url === 'string' && result.url.startsWith('https://')) {
+        return result.url;
+      }
     }
   } catch {
     // Proceed to direct upload
   }
 
   // 2. Try direct Supabase Storage upload
-  try {
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) try {
     const safeName = `uploads/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
     const directRes = await fetch(`${SUPABASE_URL}/storage/v1/object/dmd-assets/${safeName}`, {
       method: 'POST',
