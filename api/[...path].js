@@ -11,7 +11,9 @@ function json(res, status, body) {
 }
 
 function tokenFor(email, expiresAt) {
-  const payload = `${email}.${expiresAt}`;
+  // Email addresses commonly contain dots, so use a separator that cannot
+  // appear in an email address. This keeps Vercel-issued upload tokens valid.
+  const payload = `${email}:${expiresAt}`;
   return `${Buffer.from(payload).toString('base64url')}.${createHmac('sha256', TOKEN_SECRET).update(payload).digest('base64url')}`;
 }
 
@@ -24,7 +26,10 @@ function authenticated(req) {
     const payload = Buffer.from(encoded, 'base64url').toString();
     const expected = createHmac('sha256', TOKEN_SECRET).update(payload).digest('base64url');
     if (signature.length !== expected.length || !timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return false;
-    const [email, expiresAt] = payload.split('.');
+    const separator = payload.lastIndexOf(':');
+    if (separator < 1) return false;
+    const email = payload.slice(0, separator);
+    const expiresAt = payload.slice(separator + 1);
     return email === ADMIN_EMAIL && Number(expiresAt) > Date.now();
   } catch {
     return false;
