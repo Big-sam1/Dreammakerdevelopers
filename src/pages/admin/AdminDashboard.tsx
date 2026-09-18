@@ -51,6 +51,7 @@ import {
   BranchLocation,
 } from '../../context/CMSContext';
 import { makeCircularFavicon, uploadImageToSupabase } from '../../lib/supabase';
+import { BackToTop } from '../../components/BackToTop';
 import mapsImage from '../../data/maps.png';
 
 type TabType =
@@ -650,7 +651,7 @@ export function AdminDashboard() {
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto z-10 relative">
+      <main id="admin-main-scroll" className="flex-1 flex flex-col min-w-0 overflow-y-auto z-10 relative">
         {/* Top Header Bar */}
         <header
           className={`h-16 border-b px-3.5 sm:px-6 lg:px-8 flex items-center justify-between sticky top-0 z-30 transition-all ${
@@ -955,6 +956,9 @@ export function AdminDashboard() {
             />
           )}
         </div>
+
+        {/* Floating Back to Top Button for Admin (responsive on small, medium, large screens) */}
+        <BackToTop scrollContainerId="admin-main-scroll" />
       </main>
     </div>
   );
