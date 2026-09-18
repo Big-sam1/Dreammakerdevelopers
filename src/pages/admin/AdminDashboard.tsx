@@ -2328,13 +2328,15 @@ function PageHeroesSection({
   const pages: (keyof typeof cms.pageHeroes)[] = ['about', 'services', 'projects', 'contact', 'startProject'];
   const [heroes, setHeroes] = useState(cms.pageHeroes || {});
   const [heroPhrases, setHeroPhrases] = useState(cms.heroPhrases || []);
+  const [homeBackgroundImage, setHomeBackgroundImage] = useState(cms.heroBackgroundImage || '');
 
   useEffect(() => {
     if (cms.pageHeroes) {
       setHeroes(cms.pageHeroes);
     }
     setHeroPhrases(cms.heroPhrases || []);
-  }, [cms.pageHeroes, cms.heroPhrases]);
+    setHomeBackgroundImage(cms.heroBackgroundImage || '');
+  }, [cms.pageHeroes, cms.heroPhrases, cms.heroBackgroundImage]);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -2343,7 +2345,11 @@ function PageHeroesSection({
         updatePageHero(p, heroes[p]);
       }
     });
-    updateCMS((prev) => ({ ...prev, heroPhrases: heroPhrases.map((phrase) => phrase.trim()).filter(Boolean).slice(0, 3) }));
+    updateCMS((prev) => ({
+      ...prev,
+      heroPhrases: heroPhrases.map((phrase) => phrase.trim()).filter(Boolean).slice(0, 3),
+      heroBackgroundImage: homeBackgroundImage.trim() || cms.heroBackgroundImage,
+    }));
     showToast('Hero text saved. It will sync permanently to every device.');
   };
 
@@ -2389,6 +2395,45 @@ function PageHeroesSection({
             className={`w-full px-3 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
           />
         ))}
+      </div>
+
+      <div className={`border rounded-2xl p-5 space-y-3 ${cardBgClass}`}>
+        <h2 className="text-sm font-bold">Home hero background image</h2>
+        <p className={`text-xs ${isLight ? 'text-gray-500' : 'text-cream/60'}`}>
+          This image appears behind “We turn bold ideas into …” on the home page.
+        </p>
+        <div className="flex gap-2 items-center">
+          <input
+            type="text"
+            placeholder="Image URL or upload below..."
+            value={homeBackgroundImage}
+            onChange={(e) => setHomeBackgroundImage(e.target.value)}
+            className={`flex-1 px-3 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
+          />
+          {homeBackgroundImage && (
+            <button
+              type="button"
+              onClick={() => setHomeBackgroundImage('')}
+              className="px-2 py-1.5 text-xs rounded-lg text-red-400 hover:bg-red-500/10 border border-red-500/20"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+        <label className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed text-xs cursor-pointer hover:border-lime transition-colors">
+          <Upload className="w-3.5 h-3.5 text-lime" />
+          <span>{uploadingField === 'homeHeroBg' ? 'Uploading...' : 'Upload from Device'}</span>
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleFileUpload(e, 'homeHeroBg', (url) => {
+              setHomeBackgroundImage(url);
+              updateCMS((prev) => ({ ...prev, heroBackgroundImage: url }));
+              showToast('Home hero background image uploaded.');
+            })}
+          />
+        </label>
       </div>
 
       <div className="space-y-6">

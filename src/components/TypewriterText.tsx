@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 type TypewriterTextProps = {
   text?: string;
@@ -9,10 +9,16 @@ type TypewriterTextProps = {
 
 export function TypewriterText({ text, phrases, speed = 120, className = '' }: TypewriterTextProps) {
   const [displayedText, setDisplayedText] = useState('');
+  // Depend on the actual phrase values, rather than an array reference that can
+  // change when the CMS re-renders and reset the typing animation to one letter.
+  const phraseKey = useMemo(
+    () => (phrases?.filter(Boolean).join('|') || text || 'digital reality'),
+    [phrases, text],
+  );
 
   useEffect(() => {
     setDisplayedText('');
-    const words = phrases?.filter(Boolean).length ? phrases.filter(Boolean) : [text || 'digital reality'];
+    const words = phraseKey.split('|').filter(Boolean);
     let wordIndex = 0;
     let characterIndex = 0;
     let removing = false;
@@ -34,7 +40,7 @@ export function TypewriterText({ text, phrases, speed = 120, className = '' }: T
     };
     tick();
     return () => clearTimeout(timeout);
-  }, [text, phrases, speed]);
+  }, [phraseKey, speed]);
 
   return (
     <span className={className}>

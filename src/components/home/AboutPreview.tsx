@@ -4,20 +4,24 @@ import { ArrowRightIcon, CheckCircle2Icon, StarIcon } from 'lucide-react';
 import { Eyebrow } from '../Eyebrow';
 import { CountUp } from '../CountUp';
 import { useCMS } from '../../context/CMSContext';
+import whoWeAreImage1 from '../../data/1.png';
+import whoWeAreImage2 from '../../data/2.png';
+import whoWeAreImage3 from '../../data/3.png';
+import whoWeAreImage4 from '../../data/4.png';
 
 const skills = ['Software', 'AI', 'UI/UX', 'Branding', 'Mobile', 'Consulting'];
 
 const whoWeAreImages = [
   {
-    src: '/3e957b1a-e5c2-4295-a84f-3a8e4e0af287.jpg',
+    src: whoWeAreImage1,
     alt: 'Two Dream Maker developers collaborating on code and interface design',
   },
   {
-    src: '/0ff3ad28-e918-4423-91ef-740844bec2eb.jpg',
+    src: whoWeAreImage2,
     alt: 'DMD team members presenting digital product milestones',
   },
   {
-    src: '/256842fa-b28b-4563-986d-bcc0bf612542.jpg',
+    src: whoWeAreImage3,
     alt: 'Engineering scalable technology and software systems',
   },
 ];
@@ -65,7 +69,7 @@ export function AboutPreview() {
               </div>
             </div>
             <img
-              src="/67bedf41-d607-4532-8e95-cdbc38a213b5.jpg"
+              src={whoWeAreImage4}
               alt="Designers reviewing product wireframes together"
               className="h-full w-full rounded-2xl object-cover"
               loading="lazy" />

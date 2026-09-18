@@ -4,9 +4,11 @@ import { ArrowRightIcon, StarIcon } from 'lucide-react';
 
 import { useCMS } from '../../context/CMSContext';
 import { TypewriterText } from '../TypewriterText';
+import heroImage from '../../data/hero.png';
 
 export function Hero() {
   const { cms } = useCMS();
+  const backgroundImage = heroImage;
   return (
     <section className="relative overflow-hidden bg-forest">
       <div
@@ -14,11 +16,11 @@ export function Hero() {
         aria-hidden="true">
         
         <img
-          src="/0ff3ad28-e918-4423-91ef-740844bec2eb.jpg"
+          src={backgroundImage}
           alt=""
           className="h-full w-full object-cover object-center" />
         
-        <div className="absolute inset-0 bg-forest/45" />
+        <div className="absolute inset-0 bg-forest/25" />
         <div className="absolute inset-y-0 left-0 w-1/3 bg-forest [mask-image:linear-gradient(to_right,black,transparent)]" />
       </div>
 
@@ -92,7 +94,7 @@ export function Hero() {
 
         <div className="mt-12 lg:hidden">
           <img
-            src="/0ff3ad28-e918-4423-91ef-740844bec2eb.jpg"
+            src={backgroundImage}
             alt="Dream Maker Developers team members presenting a project on a laptop"
             className="h-64 w-full rounded-2xl object-cover sm:h-80" />
           

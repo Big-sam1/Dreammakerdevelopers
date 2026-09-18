@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { navLinks as initialNavLinks, company as initialCompany, stats as initialStats, testimonials as initialTestimonials, team as initialTeam } from '../data/site';
 import { services as initialServices } from '../data/services';
 import { getCmsStateFromSupabase, saveCmsStateToSupabase, savePublicSubmission } from '../lib/supabase';
+import defaultHeroImage from '../data/heros.png';
 
 export type TestimonialItem = {
   id: string;
@@ -142,6 +143,7 @@ export type PageHeroItem = {
 
 export type CMSState = {
   heroPhrases: string[];
+  heroBackgroundImage: string;
   // 1. Branding & Logos
   navLogo: string;
   footerLogo: string;
@@ -413,6 +415,7 @@ const initialBranches: BranchLocation[] = [
 
 const defaultState: CMSState = {
   heroPhrases: ['digital reality', 'scalable software', 'intelligent experiences'],
+  heroBackgroundImage: defaultHeroImage,
   navLogo: '/logonav.png',
   footerLogo: '/logo.png',
   brandName: 'Dream Maker',
@@ -734,6 +737,10 @@ function mergeWithDefaults(parsed: any): CMSState {
     ...parsed,
     // Migrate the legacy square JPEG to the circular SVG favicon.
     favicon: parsed.favicon === '/favicon.jpeg' ? defaultState.favicon : (parsed.favicon || defaultState.favicon),
+    // Replace the former hard-coded Home hero photo with the project hero asset.
+    heroBackgroundImage: parsed.heroBackgroundImage === '/0ff3ad28-e918-4423-91ef-740844bec2eb.jpg'
+      ? defaultHeroImage
+      : (parsed.heroBackgroundImage || defaultHeroImage),
     heroPhrases: Array.isArray(parsed.heroPhrases) && parsed.heroPhrases.filter(Boolean).length > 0
       ? parsed.heroPhrases.filter((phrase: unknown) => typeof phrase === 'string' && phrase.trim()).slice(0, 3)
       : defaultState.heroPhrases,
