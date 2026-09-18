@@ -1,0 +1,235 @@
+/* @import url() FONT IMPORTS MUST ALWAYS BE AT THE VERY TOP OF THIS FILE, ABOVE THE TAILWIND IMPORTS — DO NOT DELETE THIS COMMENT */
+@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+/* CRITICAL: THE FOLLOWING TAILWIND IMPORTS MUST NEVER BE DELETED OR REORDERED — DO NOT DELETE THIS COMMENT */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* END TAILWIND IMPORTS — ALL OTHER CSS MUST GO BELOW THIS LINE */
+
+html {
+  scroll-behavior: smooth;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar {
+  display: none;
+}
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: #ffffff;
+  color: #14261f;
+}
+h1,
+h2,
+h3,
+h4 {
+  font-family: 'Archivo', system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+@keyframes slowShake {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  20% {
+    transform: rotate(-3deg) scale(1.02);
+  }
+  40% {
+    transform: rotate(3deg) scale(1.02);
+  }
+  60% {
+    transform: rotate(-2deg) scale(1.01);
+  }
+  80% {
+    transform: rotate(2deg) scale(1.01);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+.shake-slow-hover {
+  transition: transform 0.4s ease;
+}
+
+.shake-slow-hover:hover {
+  animation: slowShake 1.2s ease-in-out infinite;
+}
+
+/* Page entrance and refresh animations */
+@keyframes fadeInSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInSlideUp 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Scroll reveal helper classes */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.85s cubic-bezier(0.16, 1, 0.3, 1), transform 0.85s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.scroll-reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger delay children */
+.scroll-reveal.revealed.stagger-reveal > *:nth-child(1),
+.scroll-reveal.revealed .stagger-item:nth-child(1) {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 80ms;
+}
+
+.scroll-reveal.revealed.stagger-reveal > *:nth-child(2),
+.scroll-reveal.revealed .stagger-item:nth-child(2) {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 180ms;
+}
+
+.scroll-reveal.revealed.stagger-reveal > *:nth-child(3),
+.scroll-reveal.revealed .stagger-item:nth-child(3) {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 280ms;
+}
+
+.scroll-reveal.revealed.stagger-reveal > *:nth-child(4),
+.scroll-reveal.revealed .stagger-item:nth-child(4) {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 380ms;
+}
+
+.scroll-reveal.revealed.stagger-reveal > *:nth-child(5),
+.scroll-reveal.revealed .stagger-item:nth-child(5) {
+  opacity: 1;
+  transform: translateY(0);
+  transition-delay: 480ms;
+}
+
+/* Slow-motion up-and-down floating animation for About Our Story image */
+@keyframes floatSlow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-16px);
+  }
+}
+
+.animate-float-slow {
+  animation: floatSlow 5.5s ease-in-out infinite;
+  will-change: transform;
+}
+
+/* Sliding partners logo marquee */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 24s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* When custom full-page background image is applied, make containers transparent and text/logos crisp */
+.dmd-custom-bg-active section,
+.dmd-custom-bg-active article,
+.dmd-custom-bg-active .bg-cream,
+.dmd-custom-bg-active .bg-white {
+  background-color: rgba(13, 50, 39, 0.45) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  color: #f6f5ec !important;
+  border-color: rgba(246, 245, 236, 0.14) !important;
+}
+
+.dmd-custom-bg-active .text-forest,
+.dmd-custom-bg-active .text-forest\/80,
+.dmd-custom-bg-active .text-forest\/70,
+.dmd-custom-bg-active .text-forest\/60,
+.dmd-custom-bg-active .text-forest\/65 {
+  color: #f6f5ec !important;
+}
+
+.dmd-custom-bg-active header > div {
+  background-color: rgba(8, 32, 25, 0.85) !important;
+  backdrop-filter: blur(16px) !important;
+  border-bottom-color: rgba(246, 245, 236, 0.15) !important;
+}
+
+.dmd-custom-bg-active header .text-forest {
+  color: #ffffff !important;
+}
+
+.dmd-custom-bg-active footer {
+  background-color: rgba(8, 32, 25, 0.88) !important;
+}
+
+/* Glassmorphic transparent mode for Admin Portal when Website Background is active */
+.dmd-admin-glass-mode {
+  background-color: transparent !important;
+}
+
+.dmd-admin-glass-mode aside {
+  background-color: rgba(8, 32, 25, 0.55) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-right-color: rgba(246, 245, 236, 0.15) !important;
+}
+
+.dmd-admin-glass-mode header {
+  background-color: rgba(8, 32, 25, 0.50) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-bottom-color: rgba(246, 245, 236, 0.15) !important;
+}
+
+.dmd-admin-glass-mode form,
+.dmd-admin-glass-mode .rounded-2xl,
+.dmd-admin-glass-mode .border.rounded-xl {
+  backdrop-filter: blur(14px) !important;
+  -webkit-backdrop-filter: blur(14px) !important;
+}
+
+.dmd-admin-glass-mode table {
+  background-color: transparent !important;
+}
+
+.dmd-admin-glass-mode tr {
+  background-color: rgba(8, 32, 25, 0.35) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+.dmd-admin-glass-mode tr:hover {
+  background-color: rgba(13, 50, 39, 0.6) !important;
+}
