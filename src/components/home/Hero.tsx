@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowRightIcon, StarIcon } from 'lucide-react';
 
 import { useCMS } from '../../context/CMSContext';
+import { TypewriterText } from '../TypewriterText';
 
 export function Hero() {
   const { cms } = useCMS();
@@ -22,10 +23,10 @@ export function Hero() {
       </div>
 
       <div className="relative mx-auto max-w-7xl px-6 py-16 md:py-24">
-        <div className="max-w-xl">
+        <div className="max-w-xl hero-entrance">
           <h1 className="font-display text-4xl font-bold uppercase leading-[1.05] text-white sm:text-5xl lg:text-6xl">
             We turn bold ideas into{' '}
-            <span className="text-lime">digital reality</span>
+            <TypewriterText phrases={cms.heroPhrases} className="inline text-lime" />
           </h1>
 
           <p className="mt-5 max-w-lg text-base leading-relaxed text-cream/75">

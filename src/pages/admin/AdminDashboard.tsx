@@ -133,6 +133,7 @@ export function AdminDashboard() {
   const navigate = useNavigate();
   const {
     cms,
+    updateCMS,
     updateStats,
     updateCompany,
     updateSocialLinks,
@@ -170,7 +171,9 @@ export function AdminDashboard() {
     const isAuth =
       sessionStorage.getItem('dmd_admin_auth') ||
       localStorage.getItem('dmd_admin_auth');
-    if (!isAuth) {
+    // A dashboard marker alone is not enough: uploads and Supabase writes
+    // require the real Vercel API session token.
+    if (!isAuth || !localStorage.getItem('dmd_admin_token')) {
       navigate('/admin/login');
     }
   }, [navigate]);
@@ -202,6 +205,7 @@ export function AdminDashboard() {
   const handleLogout = () => {
     sessionStorage.removeItem('dmd_admin_auth');
     localStorage.removeItem('dmd_admin_auth');
+    localStorage.removeItem('dmd_admin_token');
     navigate('/admin/login');
   };
 
@@ -753,6 +757,7 @@ export function AdminDashboard() {
           {activeTab === 'map' && (
             <MapBranchesSection
               cms={cms}
+              updateCMS={updateCMS}
               addBranch={addBranch}
               updateBranch={updateBranch}
               deleteBranch={deleteBranch}
@@ -814,6 +819,7 @@ export function AdminDashboard() {
           {activeTab === 'heroes' && (
             <PageHeroesSection
               cms={cms}
+              updateCMS={updateCMS}
               updatePageHero={updatePageHero}
               handleFileUpload={handleFileUpload}
               uploadingField={uploadingField}
@@ -2300,6 +2306,7 @@ function BrandingSection({
    ========================================================================= */
 function PageHeroesSection({
   cms,
+  updateCMS,
   updatePageHero,
   handleFileUpload,
   uploadingField,
@@ -2309,6 +2316,7 @@ function PageHeroesSection({
   inputBgClass,
 }: {
   cms: ReturnType<typeof useCMS>['cms'];
+  updateCMS: ReturnType<typeof useCMS>['updateCMS'];
   updatePageHero: ReturnType<typeof useCMS>['updatePageHero'];
   handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>, f: string, cb: (url: string) => void) => void;
   uploadingField: string | null;
@@ -2319,12 +2327,14 @@ function PageHeroesSection({
 }) {
   const pages: (keyof typeof cms.pageHeroes)[] = ['about', 'services', 'projects', 'contact', 'startProject'];
   const [heroes, setHeroes] = useState(cms.pageHeroes || {});
+  const [heroPhrases, setHeroPhrases] = useState(cms.heroPhrases || []);
 
   useEffect(() => {
     if (cms.pageHeroes) {
       setHeroes(cms.pageHeroes);
     }
-  }, [cms.pageHeroes]);
+    setHeroPhrases(cms.heroPhrases || []);
+  }, [cms.pageHeroes, cms.heroPhrases]);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -2333,7 +2343,8 @@ function PageHeroesSection({
         updatePageHero(p, heroes[p]);
       }
     });
-    showToast('Page heroes, background images & blur filters saved live!');
+    updateCMS((prev) => ({ ...prev, heroPhrases: heroPhrases.map((phrase) => phrase.trim()).filter(Boolean).slice(0, 3) }));
+    showToast('Hero text saved. It will sync permanently to every device.');
   };
 
   const pageLabels: Record<string, string> = {
@@ -2359,6 +2370,25 @@ function PageHeroesSection({
         <p className={`text-xs ${isLight ? 'text-gray-500' : 'text-cream/60'}`}>
           Customize headline copy, upload custom background images, set image blur intensity, and tune the green overlay opacity for every public page hero.
         </p>
+      </div>
+
+      <div className={`border rounded-2xl p-5 space-y-3 ${cardBgClass}`}>
+        <h2 className="text-sm font-bold">Home headline rotating phrases</h2>
+        <p className={`text-xs ${isLight ? 'text-gray-500' : 'text-cream/60'}`}>These three phrases type, pause, and change in “We turn bold ideas into …” on the home page.</p>
+        {[0, 1, 2].map((index) => (
+          <input
+            key={index}
+            type="text"
+            value={heroPhrases[index] || ''}
+            placeholder={`Phrase ${index + 1}`}
+            onChange={(e) => setHeroPhrases((previous) => {
+              const next = [...previous];
+              next[index] = e.target.value;
+              return next;
+            })}
+            className={`w-full px-3 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
+          />
+        ))}
       </div>
 
       <div className="space-y-6">

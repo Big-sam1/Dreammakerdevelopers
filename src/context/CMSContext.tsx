@@ -141,6 +141,7 @@ export type PageHeroItem = {
 };
 
 export type CMSState = {
+  heroPhrases: string[];
   // 1. Branding & Logos
   navLogo: string;
   footerLogo: string;
@@ -411,6 +412,7 @@ const initialBranches: BranchLocation[] = [
 ];
 
 const defaultState: CMSState = {
+  heroPhrases: ['digital reality', 'scalable software', 'intelligent experiences'],
   navLogo: '/logonav.png',
   footerLogo: '/logo.png',
   brandName: 'Dream Maker',
@@ -732,6 +734,9 @@ function mergeWithDefaults(parsed: any): CMSState {
     ...parsed,
     // Migrate the legacy square JPEG to the circular SVG favicon.
     favicon: parsed.favicon === '/favicon.jpeg' ? defaultState.favicon : (parsed.favicon || defaultState.favicon),
+    heroPhrases: Array.isArray(parsed.heroPhrases) && parsed.heroPhrases.filter(Boolean).length > 0
+      ? parsed.heroPhrases.filter((phrase: unknown) => typeof phrase === 'string' && phrase.trim()).slice(0, 3)
+      : defaultState.heroPhrases,
     stats: { ...defaultState.stats, ...(parsed.stats || {}) },
     company: { ...defaultState.company, ...(parsed.company || {}) },
     socialLinks: Array.isArray(parsed.socialLinks) && parsed.socialLinks.length > 0 ? parsed.socialLinks : defaultState.socialLinks,

@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 type TypewriterTextProps = {
-  text: string;
+  text?: string;
+  phrases?: string[];
   speed?: number; // ms per char
   className?: string;
 };
 
-export function TypewriterText({ text, speed = 22, className = '' }: TypewriterTextProps) {
+export function TypewriterText({ text, phrases, speed = 55, className = '' }: TypewriterTextProps) {
   const [displayedText, setDisplayedText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
 
@@ -19,18 +19,28 @@ export function TypewriterText({ text, speed = 22, className = '' }: TypewriterT
     const startTyping = () => {
       if (startedRef.current) return;
       startedRef.current = true;
-      setIsTyping(true);
-
-      let currentIndex = 0;
-      const interval = setInterval(() => {
-        if (currentIndex <= text.length) {
-          setDisplayedText(text.slice(0, currentIndex));
-          currentIndex++;
-        } else {
-          setIsTyping(false);
-          clearInterval(interval);
+      const words = phrases?.filter(Boolean).length ? phrases.filter(Boolean) : [text || 'digital reality'];
+      let wordIndex = 0;
+      let characterIndex = 0;
+      let removing = false;
+      let timeout: ReturnType<typeof setTimeout>;
+      const tick = () => {
+        const word = words[wordIndex];
+        characterIndex += removing ? -1 : 1;
+        setDisplayedText(word.slice(0, Math.max(0, characterIndex)));
+        if (!removing && characterIndex === word.length) {
+          removing = true;
+          timeout = setTimeout(tick, 1800);
+          return;
         }
-      }, speed);
+        if (removing && characterIndex === 0) {
+          removing = false;
+          wordIndex = (wordIndex + 1) % words.length;
+        }
+        timeout = setTimeout(tick, removing ? Math.max(24, speed / 2) : speed);
+      };
+      tick();
+      return () => clearTimeout(timeout);
     };
 
     if (!('IntersectionObserver' in window)) {
@@ -53,21 +63,11 @@ export function TypewriterText({ text, speed = 22, className = '' }: TypewriterT
     return () => {
       observer.disconnect();
     };
-  }, [text, speed]);
-
-  // Split into paragraphs if there are double line breaks
-  const paragraphs = displayedText.split('\n\n');
+  }, [text, phrases, speed]);
 
   return (
     <div ref={containerRef} className={className}>
-      {paragraphs.map((p, idx) => (
-        <p key={idx} className={idx > 0 ? 'mt-4' : ''}>
-          {p}
-          {isTyping && idx === paragraphs.length - 1 && (
-            <span className="typewriter-cursor" aria-hidden="true" />
-          )}
-        </p>
-      ))}
+      <span>{displayedText}</span><span className="typewriter-cursor" aria-hidden="true" />
     </div>
   );
 }

@@ -155,15 +155,7 @@ export async function uploadImageToSupabase(file: File): Promise<string> {
   }
 
   // 3. Resilient Base64 Data URL fallback — image will display immediately on the UI
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') resolve(reader.result);
-      else reject(new Error('Failed to read image file.'));
-    };
-    reader.onerror = () => reject(new Error('Failed to read image file.'));
-    reader.readAsDataURL(file);
-  });
+  throw new Error('Image could not be stored permanently in Supabase. Please sign in again and retry.');
 }
 
 // ─── PUBLIC FORM SUBMISSIONS ──────────────────────────────────────────────────
