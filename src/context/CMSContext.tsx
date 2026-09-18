@@ -772,6 +772,10 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
     return defaultState;
   });
   const [isHydrated, setIsHydrated] = useState(false);
+  // Always retain the newest complete state. Retry logic uses this ref so an
+  // older failed request can never overwrite a newer admin edit.
+  const latestCmsRef = React.useRef<CMSState>(cms);
+  const retryTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Tracks the last Supabase updated_at we received — used to skip
   // unnecessary re-renders when nothing actually changed on the server.
@@ -850,16 +854,35 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
     }
   }, [cms]);
 
+  useEffect(() => {
+    latestCmsRef.current = cms;
+  }, [cms]);
+
   // ── Effect 4b: Supabase save — DEBOUNCED 1.5 s ────────────────────────────
   // Prevents flooding the database on every keystroke or rapid state change.
   useEffect(() => {
     if (!isHydrated) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+
+    const persistLatestState = async (attempt = 0) => {
+      const saved = await saveCmsStateToSupabase(latestCmsRef.current);
+      if (saved || attempt >= 3) return;
+
+      // Keep edits durable when a mobile connection or a serverless function
+      // is briefly unavailable. Each retry reads the newest state from the
+      // ref, rather than sending an old snapshot over a newer admin change.
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = setTimeout(() => {
+        void persistLatestState(attempt + 1);
+      }, 2_000 * (attempt + 1));
+    };
+
     saveTimerRef.current = setTimeout(() => {
-      saveCmsStateToSupabase(cms);
+      void persistLatestState();
     }, 1500);
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
     };
   }, [cms, isHydrated]);
 
