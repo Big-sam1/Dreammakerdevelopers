@@ -36,6 +36,7 @@ export function Testimonials() {
   }, [currentIndex]);
 
   const current = testimonials[currentIndex];
+  const fallbackPhoto = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80';
 
   return (
     <section className="bg-cream px-6 py-20 overflow-hidden">
@@ -63,6 +64,7 @@ export function Testimonials() {
               <img
                 src={current.image}
                 alt={current.name}
+                onError={(event) => { event.currentTarget.src = fallbackPhoto; }}
                 style={{ borderRadius: '100%' }}
                 className="h-24 w-24 sm:h-28 sm:w-28 border-4 border-lime object-cover shadow-md"
               />

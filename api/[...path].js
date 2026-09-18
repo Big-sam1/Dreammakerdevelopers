@@ -120,6 +120,27 @@ export default async function handler(req, res) {
       return json(res, 201, { url: `${SUPABASE_URL}/storage/v1/object/public/dmd-assets/${objectPath}` });
     }
 
+    // Large media bypasses Vercel's request-size limit: issue a short-lived
+    // Supabase signed upload URL, then the browser sends the file directly to
+    // Storage. The resulting public URL is still permanent CMS content.
+    if (path === 'upload-url' && req.method === 'POST') {
+      if (!authenticated(req)) return json(res, 401, { error: 'Authentication required.' });
+      const body = JSON.parse((await readBody(req)).toString() || '{}');
+      const fileName = String(body.fileName || 'upload').replace(/[^a-zA-Z0-9._-]/g, '_');
+      const objectPath = `uploads/${Date.now()}-${fileName}`;
+      const response = await supabase(`/storage/v1/object/upload/sign/dmd-assets/${objectPath}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.url) throw new Error(result?.message || 'Could not create a Supabase upload URL.');
+      return json(res, 200, {
+        uploadUrl: `${SUPABASE_URL}/storage/v1${result.url}`,
+        publicUrl: `${SUPABASE_URL}/storage/v1/object/public/dmd-assets/${objectPath}`,
+      });
+    }
+
     return json(res, 404, { error: 'API route not found.' });
   } catch (error) {
     console.error('[DMD API]', error);

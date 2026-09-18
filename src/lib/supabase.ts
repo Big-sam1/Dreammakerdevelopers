@@ -116,6 +116,27 @@ export async function loginWithSupabase(
 export async function uploadImageToSupabase(file: File): Promise<string> {
   const token = localStorage.getItem('dmd_admin_token');
 
+  // Videos and other larger files upload directly to Supabase through a
+  // server-issued signed URL, avoiding Vercel function payload limits.
+  if (file.size > 3_000_000) {
+    const signedRes = await fetch('/api/upload-url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify({ fileName: file.name }),
+    });
+    const signed = await signedRes.json().catch(() => null);
+    if (!signedRes.ok || !signed?.uploadUrl || !signed?.publicUrl) {
+      throw new Error('Could not prepare permanent Supabase video upload. Please sign in again and retry.');
+    }
+    const directUpload = await fetch(signed.uploadUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      body: file,
+    });
+    if (!directUpload.ok) throw new Error('Supabase did not accept this video. Please retry.');
+    return signed.publicUrl as string;
+  }
+
   // 1. Try server upload API first
   try {
     const res = await fetch('/api/uploads', {
