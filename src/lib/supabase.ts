@@ -21,9 +21,7 @@ export async function getCmsStateFromSupabase(): Promise<{
 } | null> {
   try {
     const res = await fetch(
-      // Cache-bust the public read so a visitor on another device gets the
-      // newest central CMS state immediately, never an old CDN response.
-      `${SUPABASE_URL}/rest/v1/cms_state?key=eq.primary&select=state,updated_at&limit=1&_fresh=${Date.now()}`,
+      `${SUPABASE_URL}/rest/v1/cms_state?key=eq.primary&select=state,updated_at&limit=1`,
       {
         headers: {
           apikey: SUPABASE_ANON_KEY,
