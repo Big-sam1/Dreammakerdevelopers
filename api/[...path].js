@@ -32,6 +32,18 @@ function authenticated(req) {
 }
 
 async function readBody(req, maxBytes = 10_000_000) {
+  // Vercel pre-parses request bodies for Node functions. Use that value when
+  // present; attempting to consume the request stream again yields an empty
+  // body and makes valid admin credentials appear invalid.
+  if (req.body !== undefined && req.body !== null) {
+    const body = Buffer.isBuffer(req.body)
+      ? req.body
+      : typeof req.body === 'string'
+        ? Buffer.from(req.body)
+        : Buffer.from(JSON.stringify(req.body));
+    if (body.length > maxBytes) throw new Error('Payload too large.');
+    return body;
+  }
   const chunks = [];
   let size = 0;
   for await (const chunk of req) {
