@@ -21,12 +21,16 @@ export async function getCmsStateFromSupabase(): Promise<{
 } | null> {
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/cms_state?key=eq.primary&select=state,updated_at&limit=1`,
+      // Cache-bust the public read so a visitor on another device gets the
+      // newest central CMS state immediately, never an old CDN response.
+      `${SUPABASE_URL}/rest/v1/cms_state?key=eq.primary&select=state,updated_at&limit=1&_fresh=${Date.now()}`,
       {
         headers: {
           apikey: SUPABASE_ANON_KEY,
           Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
           Accept: 'application/json',
+          'Cache-Control': 'no-cache, no-store, max-age=0',
+          Pragma: 'no-cache',
         },
         cache: 'no-store',
       }

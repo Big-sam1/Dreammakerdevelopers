@@ -7,7 +7,7 @@ type TypewriterTextProps = {
   className?: string;
 };
 
-export function TypewriterText({ text, phrases, speed = 55, className = '' }: TypewriterTextProps) {
+export function TypewriterText({ text, phrases, speed = 120, className = '' }: TypewriterTextProps) {
   const [displayedText, setDisplayedText] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
   const startedRef = useRef(false);
@@ -15,7 +15,10 @@ export function TypewriterText({ text, phrases, speed = 55, className = '' }: Ty
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    let stopTyping: (() => void) | undefined;
 
+    startedRef.current = false;
+    setDisplayedText('');
     const startTyping = () => {
       if (startedRef.current) return;
       startedRef.current = true;
@@ -30,28 +33,28 @@ export function TypewriterText({ text, phrases, speed = 55, className = '' }: Ty
         setDisplayedText(word.slice(0, Math.max(0, characterIndex)));
         if (!removing && characterIndex === word.length) {
           removing = true;
-          timeout = setTimeout(tick, 1800);
+          timeout = setTimeout(tick, 4200);
           return;
         }
         if (removing && characterIndex === 0) {
           removing = false;
           wordIndex = (wordIndex + 1) % words.length;
         }
-        timeout = setTimeout(tick, removing ? Math.max(24, speed / 2) : speed);
+        timeout = setTimeout(tick, removing ? Math.max(70, speed * 0.7) : speed);
       };
       tick();
       return () => clearTimeout(timeout);
     };
 
     if (!('IntersectionObserver' in window)) {
-      startTyping();
-      return;
+      stopTyping = startTyping();
+      return () => stopTyping?.();
     }
 
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          startTyping();
+          stopTyping = startTyping();
           observer.unobserve(el);
         }
       },
@@ -62,6 +65,7 @@ export function TypewriterText({ text, phrases, speed = 55, className = '' }: Ty
 
     return () => {
       observer.disconnect();
+      stopTyping?.();
     };
   }, [text, phrases, speed]);
 

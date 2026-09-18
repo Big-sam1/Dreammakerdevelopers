@@ -14,6 +14,31 @@ export function Layout() {
     window.scrollTo({ top: 0, behavior: 'auto' });
   }, [pathname]);
 
+  // Public pages only: reveal headings, copy, images and cards in gentle,
+  // alternating directions as visitors scroll. Admin routes do not use Layout.
+  useEffect(() => {
+    const targets = Array.from(document.querySelectorAll<HTMLElement>(
+      '#content section > *, #content article > *, #content .rounded-2xl, #content .rounded-xl'
+    )).filter((element) => !element.closest('[data-no-reveal]'));
+    targets.forEach((element, index) => {
+      element.classList.add('site-reveal', `site-reveal-${index % 4}`);
+    });
+    if (!('IntersectionObserver' in window)) {
+      targets.forEach((element) => element.classList.add('site-revealed'));
+      return;
+    }
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('site-revealed');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -28px 0px' });
+    targets.forEach((element) => observer.observe(element));
+    return () => observer.disconnect();
+  }, [pathname]);
+
   const hasCustomBg = Boolean(bg && bg.enabled && bg.imageUrl);
 
   return (
