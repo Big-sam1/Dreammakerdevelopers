@@ -2,11 +2,24 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { navLinks as initialNavLinks, company as initialCompany, stats as initialStats, testimonials as initialTestimonials, team as initialTeam } from '../data/site';
 import { services as initialServices } from '../data/services';
 import { getCmsStateFromSupabase, saveCmsStateToSupabase, savePublicSubmission } from '../lib/supabase';
-import defaultHeroImage from '../data/heros.png';
+import defaultHeroImage from '../data/hero.png';
 import defaultHomeCtaImage from '../data/5.png';
 import defaultAboutCtaImage from '../data/8.png';
 import defaultServicesCtaImage from '../data/10.png';
 import defaultNewsCtaImage from '../data/11.png';
+
+const legacyBundledImagePaths: Record<string, string> = {
+  '/5.png': defaultHomeCtaImage,
+  '/8.png': defaultAboutCtaImage,
+  '/10.png': defaultServicesCtaImage,
+  '/11.png': defaultNewsCtaImage,
+};
+
+function resolveBundledImagePath(image: unknown, fallback: string): string {
+  return typeof image === 'string' && image.trim()
+    ? legacyBundledImagePaths[image] || image
+    : fallback;
+}
 
 export type TestimonialItem = {
   id: string;
@@ -774,7 +787,12 @@ function mergeWithDefaults(parsed: any): CMSState {
       : defaultState.heroPhrases,
     heroDescription: typeof parsed.heroDescription === 'string' ? parsed.heroDescription : defaultState.heroDescription,
     ctaSections: (Object.keys(defaultState.ctaSections) as CTASectionKey[]).reduce((sections, key) => {
-      sections[key] = { ...defaultState.ctaSections[key], ...(parsed.ctaSections?.[key] || {}) };
+      const saved = parsed.ctaSections?.[key] || {};
+      sections[key] = {
+        ...defaultState.ctaSections[key],
+        ...saved,
+        image: resolveBundledImagePath(saved.image, defaultState.ctaSections[key].image),
+      };
       return sections;
     }, {} as Record<CTASectionKey, CTASectionItem>),
     stats: { ...defaultState.stats, ...(parsed.stats || {}) },

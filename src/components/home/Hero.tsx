@@ -4,10 +4,11 @@ import { ArrowRightIcon, StarIcon } from 'lucide-react';
 
 import { useCMS } from '../../context/CMSContext';
 import { TypewriterText } from '../TypewriterText';
+import defaultHeroImage from '../../data/hero.png';
 
 export function Hero() {
   const { cms } = useCMS();
-  const backgroundImage = cms.heroBackgroundImage;
+  const backgroundImage = cms.heroBackgroundImage || defaultHeroImage;
   return (
     <section className="relative overflow-hidden bg-forest">
       <div
@@ -17,7 +18,8 @@ export function Hero() {
         <img
           src={backgroundImage}
           alt=""
-          className="h-full w-full object-cover object-center" />
+          className="h-full w-full object-cover object-center"
+          onError={(event) => { event.currentTarget.src = defaultHeroImage; }} />
         
         <div className="absolute inset-0 bg-forest/25" />
         <div className="absolute inset-y-0 left-0 w-1/3 bg-forest [mask-image:linear-gradient(to_right,black,transparent)]" />
@@ -93,7 +95,8 @@ export function Hero() {
           <img
             src={backgroundImage}
             alt="Dream Maker Developers team members presenting a project on a laptop"
-            className="h-64 w-full rounded-2xl object-cover sm:h-80" />
+            className="h-64 w-full rounded-2xl object-cover sm:h-80"
+            onError={(event) => { event.currentTarget.src = defaultHeroImage; }} />
           
         </div>
       </div>

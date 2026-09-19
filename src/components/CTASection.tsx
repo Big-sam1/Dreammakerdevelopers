@@ -58,6 +58,9 @@ export function CTASection({
               alt={imageAlt}
               className="h-full w-full object-cover"
               loading="lazy"
+              onError={(event) => {
+                if (event.currentTarget.src !== defaultCtaImage) event.currentTarget.src = defaultCtaImage;
+              }}
             />
           </div>
         </div>
