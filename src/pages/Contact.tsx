@@ -31,7 +31,15 @@ export function Contact() {
   const { cms } = useCMS();
   const hero = cms.pageHeroes.contact;
   const company = cms.company;
-  const workspaceImages = cms.workspaceImages;
+  const defaultWorkspaceImages = {
+    lab: '/3e957b1a-e5c2-4295-a84f-3a8e4e0af287.jpg',
+    studio: '/0ff3ad28-e918-4423-91ef-740844bec2eb.jpg',
+    lounge: '/67bedf41-d607-4532-8e95-cdbc38a213b5.jpg',
+  };
+  const workspaceImages = {
+    ...defaultWorkspaceImages,
+    ...(cms.workspaceImages || {}),
+  };
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
@@ -147,9 +155,11 @@ export function Contact() {
                   {/* Row 1, Col 1: Image 1 */}
                   <div className="group relative h-28 sm:h-32 overflow-hidden rounded-2xl border border-forest/10 bg-forest/5 shadow-sm">
                     <img
+                      key={workspaceImages.lab}
                       src={workspaceImages.lab}
                       alt="DMD Kagarama Innovation Lab"
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      onError={(e) => { (e.target as HTMLImageElement).src = defaultWorkspaceImages.lab; }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-forest/75 via-transparent to-transparent opacity-60" />
                     <span className="absolute bottom-2 left-2 text-[10px] font-semibold text-white px-1.5 py-0.5 rounded bg-forest/80 backdrop-blur-sm">
@@ -160,9 +170,11 @@ export function Contact() {
                   {/* Row 1, Col 2: Image 2 */}
                   <div className="group relative h-28 sm:h-32 overflow-hidden rounded-2xl border border-forest/10 bg-forest/5 shadow-sm">
                     <img
+                      key={workspaceImages.studio}
                       src={workspaceImages.studio}
                       alt="Sprint Studio"
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      onError={(e) => { (e.target as HTMLImageElement).src = defaultWorkspaceImages.studio; }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-forest/75 via-transparent to-transparent opacity-60" />
                     <span className="absolute bottom-2 left-2 text-[10px] font-semibold text-white px-1.5 py-0.5 rounded bg-forest/80 backdrop-blur-sm">
@@ -173,9 +185,11 @@ export function Contact() {
                   {/* Row 2, Col 1: Image 3 */}
                   <div className="group relative h-28 sm:h-32 overflow-hidden rounded-2xl border border-forest/10 bg-forest/5 shadow-sm">
                     <img
+                      key={workspaceImages.lounge}
                       src={workspaceImages.lounge}
                       alt="Design Lounge"
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                      onError={(e) => { (e.target as HTMLImageElement).src = defaultWorkspaceImages.lounge; }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-forest/75 via-transparent to-transparent opacity-60" />
                     <span className="absolute bottom-2 left-2 text-[10px] font-semibold text-white px-1.5 py-0.5 rounded bg-forest/80 backdrop-blur-sm">

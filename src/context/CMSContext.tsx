@@ -767,7 +767,7 @@ type CMSContextType = {
   markSubmissionsRead: (ids: string[], type: 'projects' | 'contacts', read: boolean) => void;
   deleteSubmissions: (ids: string[], type: 'projects' | 'contacts') => void;
   resetToDefaults: () => void;
-  persistStateDirectly: (nextState: CMSState) => Promise<boolean>;
+  persistStateDirectly: (nextStateOrUpdater: CMSState | ((prev: CMSState) => CMSState)) => Promise<boolean>;
 };
 
 const CMSContext = createContext<CMSContextType | undefined>(undefined);
@@ -968,8 +968,14 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
     };
   }, [cms, isHydrated]);
 
-  const persistStateDirectly = async (nextState: CMSState): Promise<boolean> => {
+  const persistStateDirectly = async (
+    nextStateOrUpdater: CMSState | ((prev: CMSState) => CMSState)
+  ): Promise<boolean> => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    const nextState =
+      typeof nextStateOrUpdater === 'function'
+        ? nextStateOrUpdater(latestCmsRef.current)
+        : nextStateOrUpdater;
     latestCmsRef.current = nextState;
     setCms(nextState);
     setSyncStatus('saving');

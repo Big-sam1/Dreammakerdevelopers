@@ -2699,6 +2699,9 @@ function StatsSection({
   inputBgClass: string;
 }) {
   const [stats, setStats] = useState(cms.stats || {});
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
+  const [savingKey, setSavingKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (cms.stats) {
@@ -2706,49 +2709,164 @@ function StatsSection({
     }
   }, [cms.stats]);
 
-  const handleSave = async (e: React.FormEvent) => {
+  const counterItems = [
+    { label: 'Projects Delivered', key: 'projectsDelivered', orig: '120+' },
+    { label: 'Happy Clients', key: 'happyClients', orig: '45+' },
+    { label: 'Countries Served', key: 'countriesServed', orig: '9' },
+    { label: 'Average Rating', key: 'averageRating', orig: '4.9' },
+  ];
+
+  const handleStartEdit = (key: string, currentVal: string) => {
+    setEditingKey(key);
+    setEditValue(currentVal || '');
+  };
+
+  const handleCancelEdit = () => {
+    setEditingKey(null);
+    setEditValue('');
+  };
+
+  const handleSaveSingle = async (key: string, label: string) => {
+    const trimmed = editValue.trim();
+    if (!trimmed) {
+      showToast('Counter number cannot be empty.');
+      return;
+    }
+    setSavingKey(key);
+    const updatedStats = { ...stats, [key]: trimmed };
+    setStats(updatedStats);
+    updateStats(updatedStats);
+
+    const saved = await persistStateDirectly((prev) => ({
+      ...prev,
+      stats: {
+        ...prev.stats,
+        [key]: trimmed,
+      },
+    }));
+
+    setSavingKey(null);
+    if (saved) {
+      setEditingKey(null);
+      showToast(`${label} updated to "${trimmed}" and permanently saved to Supabase!`);
+    } else {
+      showToast('Updated locally — Supabase save failed. Please check connection and retry.');
+    }
+  };
+
+  const handleSaveAll = async (e: React.FormEvent) => {
     e.preventDefault();
     updateStats(stats);
-    const saved = await persistStateDirectly({ ...cms, stats });
-    showToast(saved ? 'Counter numbers saved permanently to Supabase!' : 'Numbers updated locally but not saved to Supabase. Please retry.');
+    const saved = await persistStateDirectly((prev) => ({
+      ...prev,
+      stats,
+    }));
+    showToast(
+      saved
+        ? 'All counter numbers permanently saved to Supabase!'
+        : 'Saved locally — Supabase save failed. Please check connection and retry.'
+    );
   };
 
   return (
-    <form onSubmit={handleSave} className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Public Numbers & Counters</h1>
-        <p className={`text-xs ${isLight ? 'text-gray-500' : 'text-cream/60'}`}>
-          Update the 4 primary impact numbers displayed across the site.
-        </p>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Public Numbers & Counters</h1>
+          <p className={`text-xs ${isLight ? 'text-gray-500' : 'text-cream/60'}`}>
+            Click the edit icon on any card to update and permanently save that number to Supabase.
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {[
-          { label: 'Projects Delivered', key: 'projectsDelivered', orig: '120+' },
-          { label: 'Happy Clients', key: 'happyClients', orig: '45+' },
-          { label: 'Countries Served', key: 'countriesServed', orig: '9' },
-          { label: 'Average Rating', key: 'averageRating', orig: '4.9' },
-        ].map((s) => (
-          <div key={s.label} className={`border rounded-2xl p-5 space-y-2 ${cardBgClass}`}>
-            <label className={`text-xs font-bold uppercase block ${isLight ? 'text-forest' : 'text-lime'}`}>{s.label}</label>
-            <input
-              type="text"
-              value={(stats as any)?.[s.key] || ''}
-              onChange={(e) => setStats({ ...stats, [s.key]: e.target.value })}
-              className={`w-full px-3 py-2 text-2xl font-black rounded-xl focus:outline-none ${inputBgClass}`}
-            />
-            <span className="text-[11px] opacity-50 block">Original: {s.orig}</span>
-          </div>
-        ))}
+        {counterItems.map((s) => {
+          const val = (stats as any)?.[s.key] || s.orig;
+          const isEditing = editingKey === s.key;
+          const isSaving = savingKey === s.key;
+
+          return (
+            <div
+              key={s.label}
+              className={`border rounded-2xl p-5 space-y-3 transition-all relative ${cardBgClass} ${
+                isEditing ? 'ring-2 ring-lime shadow-xl' : 'hover:border-lime/40'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <label className={`text-xs font-bold uppercase tracking-wider block ${isLight ? 'text-forest' : 'text-lime'}`}>
+                  {s.label}
+                </label>
+                {!isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => handleStartEdit(s.key, val)}
+                    className="p-1.5 rounded-lg border border-lime/30 text-lime hover:bg-lime/20 transition-all flex items-center gap-1 text-[11px] font-semibold cursor-pointer"
+                    title={`Edit ${s.label}`}
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Edit</span>
+                  </button>
+                )}
+              </div>
+
+              {isEditing ? (
+                <div className="space-y-3 pt-1">
+                  <input
+                    type="text"
+                    autoFocus
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleSaveSingle(s.key, s.label);
+                      } else if (e.key === 'Escape') {
+                        handleCancelEdit();
+                      }
+                    }}
+                    className={`w-full px-3 py-2 text-2xl font-black rounded-xl border border-lime/40 focus:outline-none focus:ring-2 focus:ring-lime ${inputBgClass}`}
+                    placeholder={s.orig}
+                  />
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={isSaving}
+                      onClick={() => handleSaveSingle(s.key, s.label)}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-lime hover:bg-lime/90 text-forest font-bold text-xs shadow-md transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>{isSaving ? 'Saving…' : 'Save'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isSaving}
+                      onClick={handleCancelEdit}
+                      className="px-3 py-2 rounded-xl border border-red-400/30 text-red-400 hover:bg-red-500/10 text-xs font-semibold transition-all cursor-pointer"
+                      title="Cancel"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="pt-1">
+                  <div className="text-3xl font-black tracking-tight">{val}</div>
+                  <span className="text-[11px] opacity-50 block mt-1">Benchmark: {s.orig}</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <button
-        type="submit"
+        type="button"
+        onClick={handleSaveAll}
         className="px-6 py-3 rounded-xl bg-lime hover:bg-lime/90 text-forest font-semibold text-sm transition-all shadow-md cursor-pointer"
       >
-        Update Public Numbers
+        Update All Public Numbers
       </button>
-    </form>
+    </div>
   );
 }
 
@@ -4346,62 +4464,195 @@ function WorkspaceSection({
   cardBgClass: string;
   inputBgClass: string;
 }) {
-  const [images, setImages] = useState(cms.workspaceImages);
-
-  useEffect(() => { setImages(cms.workspaceImages); }, [cms.workspaceImages]);
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    updateWorkspaceImages(images);
-    const saved = await persistStateDirectly({ ...cms, workspaceImages: images });
-    showToast(saved ? 'Kagarama Hub photos permanently saved to Supabase!' : 'Saved locally — Supabase save failed. Please retry.');
+  const defaultWorkspaceImages = {
+    lab: '/3e957b1a-e5c2-4295-a84f-3a8e4e0af287.jpg',
+    studio: '/0ff3ad28-e918-4423-91ef-740844bec2eb.jpg',
+    lounge: '/67bedf41-d607-4532-8e95-cdbc38a213b5.jpg',
   };
 
+  const [images, setImages] = useState(cms.workspaceImages || defaultWorkspaceImages);
+  const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
+  const [savingField, setSavingField] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (cms.workspaceImages) {
+      setImages(cms.workspaceImages);
+    }
+  }, [cms.workspaceImages]);
+
+  const handleSaveAll = async (e: React.FormEvent) => {
+    e.preventDefault();
+    updateWorkspaceImages(images);
+    const saved = await persistStateDirectly((prev) => ({
+      ...prev,
+      workspaceImages: images,
+    }));
+    showToast(
+      saved
+        ? 'All 3 Kagarama Hub photos permanently saved to Supabase!'
+        : 'Saved locally — Supabase save failed. Please check connection and retry.'
+    );
+  };
+
+  const handleFileChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    key: 'lab' | 'studio' | 'lounge',
+    label: string
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Immediately show local preview URL so the admin sees the new photo instantly
+    const previewUrl = URL.createObjectURL(file);
+    setLocalPreviews((prev) => ({ ...prev, [key]: previewUrl }));
+
+    handleFileUpload(e, key, async (permanentUrl) => {
+      // Clean up object URL
+      URL.revokeObjectURL(previewUrl);
+      setLocalPreviews((prev) => {
+        const copy = { ...prev };
+        delete copy[key];
+        return copy;
+      });
+
+      // Update state with the permanent Supabase Storage URL
+      setImages((prev) => ({ ...prev, [key]: permanentUrl }));
+      updateWorkspaceImages({ ...images, [key]: permanentUrl });
+
+      // Save directly to Supabase using functional updater (never loses state)
+      const saved = await persistStateDirectly((prev) => ({
+        ...prev,
+        workspaceImages: {
+          ...prev.workspaceImages,
+          [key]: permanentUrl,
+        },
+      }));
+
+      showToast(
+        saved
+          ? `${label} photo uploaded and permanently saved to Supabase!`
+          : `${label} uploaded locally — Supabase save failed. Please retry.`
+      );
+    });
+  };
+
+  const handleDirectUrlSave = async (key: 'lab' | 'studio' | 'lounge', label: string) => {
+    setSavingField(key);
+    updateWorkspaceImages(images);
+    const saved = await persistStateDirectly((prev) => ({
+      ...prev,
+      workspaceImages: images,
+    }));
+    setSavingField(null);
+    showToast(
+      saved
+        ? `${label} URL permanently saved to Supabase!`
+        : 'Saved locally — Supabase save failed. Please retry.'
+    );
+  };
+
+  const hubItems = [
+    { key: 'lab' as const, label: 'Systems Lab', desc: 'Hardware & distributed infrastructure' },
+    { key: 'studio' as const, label: 'Design Studio', desc: 'Interface design and ergonomics suite' },
+    { key: 'lounge' as const, label: 'Collab Lounge', desc: 'Client sprint rooms and demo staging' },
+  ];
+
   return (
-    <form onSubmit={handleSave} className="space-y-6">
+    <form onSubmit={handleSaveAll} className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">
           {cms.sectionTitles?.workspacesTitle || 'Our Kagarama Hub & Workspaces'}
         </h1>
         <p className={`text-xs ${isLight ? 'text-gray-500' : 'text-cream/60'}`}>
-          Upload the 3 studio and engineering frames displayed alongside the FAQ in Contact.
+          Upload the 3 studio and engineering frames displayed alongside the FAQ in Contact. Uploaded images save permanently to Supabase and show live on the user site.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[
-          { key: 'lab', label: 'Systems Lab', desc: 'Hardware & distributed infrastructure' },
-          { key: 'studio', label: 'Design Studio', desc: 'Interface design and ergonomics suite' },
-          { key: 'lounge', label: 'Collab Lounge', desc: 'Client sprint rooms and demo staging' },
-        ].map((hub) => {
-          const imgKey = hub.key as keyof typeof images;
-          const currentUrl = images[imgKey];
+        {hubItems.map((hub) => {
+          const displayUrl = localPreviews[hub.key] || images[hub.key] || defaultWorkspaceImages[hub.key];
+          const isUploading = uploadingField === hub.key;
+          const isSaving = savingField === hub.key;
+
           return (
-            <div key={hub.key} className={`border rounded-2xl p-5 space-y-4 ${cardBgClass}`}>
-              <div>
-                <h3 className="text-sm font-bold">{hub.label}</h3>
-                <p className="text-[11px] opacity-50">{hub.desc}</p>
+            <div key={hub.key} className={`border rounded-2xl p-5 space-y-4 relative ${cardBgClass}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold">{hub.label}</h3>
+                  <p className="text-[11px] opacity-50">{hub.desc}</p>
+                </div>
+                {isUploading && (
+                  <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-lime/20 text-lime text-[10px] font-bold animate-pulse border border-lime/40">
+                    <Upload className="w-3 h-3 animate-bounce" />
+                    <span>Uploading…</span>
+                  </span>
+                )}
               </div>
-              <div className="h-44 rounded-xl overflow-hidden border">
-                <img src={currentUrl} alt={hub.label} className="w-full h-full object-cover" />
-              </div>
-              <label className="block">
-                <span className="text-xs opacity-70 block mb-1">Upload from Device:</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) =>
-                    handleFileUpload(e, hub.key, async (url) => {
-                      const next = { ...images, [imgKey]: url };
-                      setImages(next);
-                      updateWorkspaceImages(next);
-                      const saved = await persistStateDirectly({ ...cms, workspaceImages: next });
-                      showToast(saved ? `${hub.label} photo permanently saved to Supabase!` : 'Uploaded locally — Supabase save failed. Please retry.');
-                    })
-                  }
-                  className="w-full text-xs file:mr-2 file:py-1.5 file:px-2.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-lime file:text-forest"
+
+              {/* Photo Frame with Live Preview */}
+              <div className="h-48 rounded-xl overflow-hidden border border-forest/10 relative bg-forest-deep">
+                <img
+                  key={displayUrl}
+                  src={displayUrl}
+                  alt={hub.label}
+                  className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = defaultWorkspaceImages[hub.key];
+                  }}
                 />
-              </label>
+                {isUploading && (
+                  <div className="absolute inset-0 bg-forest/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2 text-lime">
+                    <Upload className="w-6 h-6 animate-bounce" />
+                    <span className="text-xs font-bold text-cream">Uploading to Supabase…</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Device Upload Button */}
+              <div>
+                <label className={`flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-all shadow-sm ${
+                  isUploading
+                    ? 'bg-lime/30 text-forest/50 cursor-not-allowed'
+                    : 'bg-lime text-forest hover:bg-lime/90'
+                }`}>
+                  <Upload className="w-4 h-4" />
+                  <span>{isUploading ? 'Uploading to Supabase…' : 'Upload from Device'}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    disabled={isUploading}
+                    onChange={(e) => handleFileChange(e, hub.key, hub.label)}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {/* URL Input & Quick Save */}
+              <div className="space-y-1.5 pt-1 border-t border-forest/10">
+                <label className="text-[10px] font-semibold opacity-60 uppercase tracking-wider block">
+                  Image URL / Supabase Asset:
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={images[hub.key] || ''}
+                    onChange={(e) =>
+                      setImages((prev) => ({ ...prev, [hub.key]: e.target.value }))
+                    }
+                    placeholder="https://..."
+                    className={`flex-1 px-2.5 py-1.5 rounded-lg text-xs font-mono truncate focus:outline-none ${inputBgClass}`}
+                  />
+                  <button
+                    type="button"
+                    disabled={isSaving}
+                    onClick={() => handleDirectUrlSave(hub.key, hub.label)}
+                    className="px-2.5 py-1.5 rounded-lg bg-lime/20 border border-lime/30 text-lime hover:bg-lime/30 text-xs font-bold cursor-pointer disabled:opacity-50 shrink-0"
+                    title="Save this image URL to Supabase"
+                  >
+                    {isSaving ? '…' : 'Save'}
+                  </button>
+                </div>
+              </div>
             </div>
           );
         })}
@@ -4411,7 +4662,7 @@ function WorkspaceSection({
         type="submit"
         className="px-6 py-3 rounded-xl bg-lime hover:bg-lime/90 text-forest font-semibold text-sm transition-all shadow-md cursor-pointer"
       >
-        Save Workspace Photos
+        Save All Workspace Photos to Supabase
       </button>
     </form>
   );
