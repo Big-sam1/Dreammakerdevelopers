@@ -3019,18 +3019,31 @@ function TeamSection({
   const team = cms.team || [];
   const paginatedTeam = team.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-  const handleAddSubmit = (e: React.FormEvent) => {
+  // Team media and copy are especially visible on the public About page.
+  // Confirm this exact array reaches Supabase before reporting success or
+  // closing the editor; the provider then mirrors it locally and live-syncs it.
+  const persistTeam = async (nextTeam: TeamMemberItem[]) => {
+    const saved = await saveCmsStateToSupabase({ ...cms, team: nextTeam });
+    if (!saved) {
+      showToast('Team changes were not saved. Please wait for “Saved to Supabase” and try again.');
+    }
+    return saved;
+  };
+
+  const handleAddSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMember.name.trim()) {
       showToast('Please enter the team member name.');
       return;
     }
-    addTeamMember({
+    const member: TeamMemberItem = {
       name: newMember.name.trim(),
       role: newMember.role.trim() || 'Software Engineer',
       specialty: newMember.specialty.trim() || 'Systems Engineering',
       image: newMember.image.trim() || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
-    });
+    };
+    if (!await persistTeam([...team, member])) return;
+    addTeamMember(member);
     setNewMember({
       name: '',
       role: '',
@@ -3046,9 +3059,11 @@ function TeamSection({
     setEditFormData({ ...member });
   };
 
-  const handleSaveEdit = (e: React.FormEvent) => {
+  const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingMemberIdx !== null && editFormData) {
+      const nextTeam = team.map((member, index) => index === editingMemberIdx ? editFormData : member);
+      if (!await persistTeam(nextTeam)) return;
       updateTeamMember(editingMemberIdx, editFormData);
       setEditingMemberIdx(null);
       setEditFormData(null);
@@ -3329,6 +3344,7 @@ function TeamSection({
                       type="text"
                       value={member.name || ''}
                       onChange={(e) => updateTeamMember(actualIdx, { ...member, name: e.target.value })}
+                      onBlur={(e) => { void persistTeam(team.map((item, index) => index === actualIdx ? { ...item, name: e.target.value } : item)); }}
                       className={`font-bold text-sm border-b pb-1 focus:outline-none w-full mr-2 ${
                         isLight ? 'text-gray-900 border-gray-200' : 'text-cream border-cream/20 bg-transparent'
                       }`}
@@ -3347,8 +3363,13 @@ function TeamSection({
                         type="button"
                         onClick={() => {
                           if (window.confirm(`Delete ${member.name}?`)) {
-                            deleteTeamMember(actualIdx);
-                            showToast('Deleted team member.');
+                            const nextTeam = team.filter((_, index) => index !== actualIdx);
+                            void persistTeam(nextTeam).then((saved) => {
+                              if (saved) {
+                                deleteTeamMember(actualIdx);
+                                showToast('Deleted team member.');
+                              }
+                            });
                           }
                         }}
                         className="text-red-500 p-1 hover:bg-red-500/10 rounded"
@@ -3361,7 +3382,8 @@ function TeamSection({
                   <input
                     type="text"
                     value={member.role || ''}
-                    onChange={(e) => updateTeamMember(actualIdx, { ...member, role: e.target.value })}
+                      onChange={(e) => updateTeamMember(actualIdx, { ...member, role: e.target.value })}
+                      onBlur={(e) => { void persistTeam(team.map((item, index) => index === actualIdx ? { ...item, role: e.target.value } : item)); }}
                     className={`text-xs font-semibold border-b pb-1 focus:outline-none w-full ${
                       isLight ? 'text-forest border-gray-200' : 'text-lime border-cream/15 bg-transparent'
                     }`}
@@ -3370,7 +3392,8 @@ function TeamSection({
                   <input
                     type="text"
                     value={member.specialty || ''}
-                    onChange={(e) => updateTeamMember(actualIdx, { ...member, specialty: e.target.value })}
+                      onChange={(e) => updateTeamMember(actualIdx, { ...member, specialty: e.target.value })}
+                      onBlur={(e) => { void persistTeam(team.map((item, index) => index === actualIdx ? { ...item, specialty: e.target.value } : item)); }}
                     className={`text-[11px] border-b pb-1 focus:outline-none w-full ${
                       isLight ? 'text-gray-500 border-gray-200' : 'text-cream/70 border-cream/10 bg-transparent'
                     }`}
@@ -3388,9 +3411,11 @@ function TeamSection({
                     accept="image/*"
                     className="hidden"
                     onChange={(e) =>
-                      handleFileUpload(e, `team-${actualIdx}`, (url) => {
+                      handleFileUpload(e, `team-${actualIdx}`, async (url) => {
+                        const nextTeam = team.map((item, index) => index === actualIdx ? { ...item, image: url } : item);
+                        if (!await persistTeam(nextTeam)) return;
                         updateTeamMember(actualIdx, { ...member, image: url });
-                        showToast(`Photo updated for ${member.name}`);
+                        showToast(`Photo permanently saved for ${member.name}`);
                       })
                     }
                   />
