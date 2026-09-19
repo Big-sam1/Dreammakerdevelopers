@@ -83,6 +83,31 @@ async function saveCmsState(state) {
   if (!response.ok) throw new Error(await response.text());
 }
 
+// CMS media is intentionally linkable from the public site. Keep the bucket
+// public so the permanent URL returned after an upload can be rendered by an
+// avatar, image, or video element without a short-lived read token.
+async function ensurePublicAssetsBucket() {
+  const bucket = await supabase('/storage/v1/bucket/dmd-assets');
+  if (bucket.ok) {
+    const details = await bucket.json().catch(() => null);
+    if (details?.public === true) return;
+    const update = await supabase('/storage/v1/bucket/dmd-assets', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ public: true }),
+    });
+    if (update.ok) return;
+    throw new Error('The media bucket could not be made public.');
+  }
+  if (bucket.status !== 404) throw new Error('The media bucket could not be checked.');
+  const create = await supabase('/storage/v1/bucket', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: 'dmd-assets', name: 'dmd-assets', public: true }),
+  });
+  if (!create.ok) throw new Error('The public media bucket could not be created.');
+}
+
 export default async function handler(req, res) {
   const path = (req.url || '').split('?')[0].replace(/^\/api\//, '').replace(/^\//, '');
 
@@ -128,6 +153,7 @@ export default async function handler(req, res) {
       const body = JSON.parse((await readBody(req)).toString() || '{}');
       const fileName = String(body.fileName || 'upload').replace(/[^a-zA-Z0-9._-]/g, '_');
       const objectPath = `uploads/${Date.now()}-${fileName}`;
+      await ensurePublicAssetsBucket();
       const response = await supabase(`/storage/v1/object/upload/sign/dmd-assets/${objectPath}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

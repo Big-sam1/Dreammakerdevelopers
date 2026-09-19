@@ -213,7 +213,7 @@ export function AdminDashboard() {
   const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     fieldName: string,
-    onUploaded: (url: string) => void
+    onUploaded: (url: string) => void | Promise<void>
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -222,8 +222,7 @@ export function AdminDashboard() {
       const publicUrl = await uploadImageToSupabase(
         fieldName === 'favicon' ? await makeCircularFavicon(file) : file
       );
-      onUploaded(publicUrl);
-      showToast(`${file.type.startsWith('video/') ? 'Video' : 'Image'} uploaded and synced live!`);
+      await onUploaded(publicUrl);
     } catch (err) {
       console.error('Failed to upload image:', err);
       showToast(err instanceof Error ? err.message : 'Upload failed. Please check your connection.');
@@ -1738,7 +1737,6 @@ function AdminProfileSection({
       portalLogo: '/logonav.png',
     }
   );
-  const [newPassword, setNewPassword] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   // Track the first persisted admin profile loaded from MongoDB.
   const initializedRef = React.useRef(false);
@@ -1769,14 +1767,6 @@ function AdminProfileSection({
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     await persistProfile(profile);
-
-    // Server login credentials are deliberately configured outside the browser.
-    if (newPassword) {
-      setNewPassword('');
-      showToast('Profile saved. Change the server ADMIN_PASSWORD to update the login password.');
-      return;
-    }
-
   };
 
   return (
@@ -1784,7 +1774,7 @@ function AdminProfileSection({
       <div>
         <h1 className="text-2xl font-bold">Admin Personal Info & Portal Branding</h1>
         <p className={`text-xs ${isLight ? 'text-gray-500' : 'text-cream/60'}`}>
-          Update your name, authorized email, login password, avatar photo, and custom admin portal logo from your device.
+          Update your name, avatar photo, and custom admin portal logo from your device.
         </p>
       </div>
 
@@ -1807,12 +1797,12 @@ function AdminProfileSection({
                   type="file"
                   accept="image/*"
                   onChange={(e) =>
-                    handleFileUpload(e, 'adminAvatar', (url) => {
+                    handleFileUpload(e, 'adminAvatar', async (url) => {
                       // Use functional update to avoid stale closure of profile
                       setProfile((prev) => ({ ...prev, avatar: url }));
                       // Keep the sidebar and every other admin view in sync
                       // immediately; the CMS provider persists this change.
-                      void persistProfile({ avatar: url });
+                      await persistProfile({ avatar: url });
                     })
                   }
                   className="w-full text-xs file:mr-2 file:py-1.5 file:px-2.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-lime file:text-forest file:cursor-pointer"
@@ -1838,11 +1828,11 @@ function AdminProfileSection({
                   type="file"
                   accept="image/*"
                   onChange={(e) =>
-                    handleFileUpload(e, 'adminPortalLogo', (url) => {
+                    handleFileUpload(e, 'adminPortalLogo', async (url) => {
                       // Functional update to avoid stale closure
                       setProfile((prev) => ({ ...prev, portalLogo: url }));
                       // Push only the changed field so the sidebar portal logo updates immediately
-                      void persistProfile({ portalLogo: url });
+                      await persistProfile({ portalLogo: url });
                     })
                   }
                   className="w-full text-xs file:mr-2 file:py-1.5 file:px-2.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-lime file:text-forest file:cursor-pointer"
@@ -1874,25 +1864,14 @@ function AdminProfileSection({
           </div>
         </div>
 
-        {/* Server-managed login credentials */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t">
+        <div className="pt-4 border-t">
           <div>
-            <label className="text-xs font-medium block mb-1">Authorized Login Email:</label>
+            <label className="text-xs font-medium block mb-1">Contact Email:</label>
             <input
               type="email"
               required
               value={profile.email}
               onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-              className={`w-full px-3 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
-            />
-          </div>
-          <div>
-            <label className="text-xs font-medium block mb-1">Change Admin Password:</label>
-            <input
-              type="password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Leave blank to keep existing password"
               className={`w-full px-3 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
             />
           </div>
@@ -3494,10 +3473,16 @@ function WorkflowSection({
     }
   }, [cms.workflow]);
 
-  const handleSave = (e: React.FormEvent) => {
+  const publishWorkflow = async (nextWorkflow: typeof workflow) => {
+    updateWorkflow(nextWorkflow);
+    const saved = await saveCmsStateToSupabase({ ...cms, workflow: nextWorkflow });
+    showToast(saved ? 'Workflow video saved and published to the About page.' : 'The file uploaded, but the workflow details could not be saved. Please retry.');
+    return saved;
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    updateWorkflow(workflow);
-    showToast('Workflow video details saved!');
+    await publishWorkflow(workflow);
   };
 
   return (
@@ -3524,11 +3509,10 @@ function WorkflowSection({
               type="file"
               accept="video/mp4,video/webm"
               disabled={uploadingField === 'workflowVideo'}
-              onChange={(e) => handleFileUpload(e, 'workflowVideo', (url) => {
+              onChange={(e) => handleFileUpload(e, 'workflowVideo', async (url) => {
                 const nextWorkflow = { ...workflow, videoUrl: url };
                 setWorkflow(nextWorkflow);
-                updateWorkflow(nextWorkflow);
-                showToast('Video uploaded and published to the About page.');
+                await publishWorkflow(nextWorkflow);
               })}
               className="mt-1 w-full text-xs file:mr-2 file:py-1.5 file:px-2.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-lime file:text-forest"
             />
@@ -3550,10 +3534,10 @@ function WorkflowSection({
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => handleFileUpload(e, 'wfPoster', (url) => {
+              onChange={(e) => handleFileUpload(e, 'wfPoster', async (url) => {
                 const nextWorkflow = { ...workflow, poster: url };
                 setWorkflow(nextWorkflow);
-                updateWorkflow(nextWorkflow);
+                await publishWorkflow(nextWorkflow);
               })}
               className="w-full text-xs file:mr-2 file:py-1.5 file:px-2.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-lime file:text-forest"
             />
