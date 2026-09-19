@@ -6,7 +6,17 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://localhost:4000',
+      '/api': {
+        target: 'http://localhost:4000',
+        changeOrigin: true,
+        // Explicitly preserve the admin bearer token for local API calls.
+        configure: (proxy) => {
+          proxy.on('proxyReq', (proxyReq, req) => {
+            const authorization = req.headers.authorization;
+            if (authorization) proxyReq.setHeader('authorization', authorization);
+          });
+        },
+      },
     },
   },
 })

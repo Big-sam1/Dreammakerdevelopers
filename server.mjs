@@ -15,7 +15,7 @@
 import { createReadStream, existsSync } from 'node:fs';
 import { createServer }                 from 'node:http';
 import { extname, join, normalize }     from 'node:path';
-import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { createHmac, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 
 const port          = Number(process.env.PORT || 4000);
 const SUPABASE_URL  = process.env.VITE_SUPABASE_URL;
@@ -26,11 +26,49 @@ if (!SUPABASE_URL || !SERVICE_KEY) {
   process.exit(1);
 }
 
+const TOKEN_SECRET = process.env.ADMIN_SESSION_SECRET || SERVICE_KEY;
+
 // ─── IN-MEMORY STATE ──────────────────────────────────────────────────────────
-/** Active admin sessions  token → { email, expiresAt } */
-const sessions = new Map();
 /** Server-side CMS state cache — cleared on every PUT so users see changes within 5s */
 let cmsStateCache = null; // { state, updatedAt }
+
+// ─── HMAC TOKEN HELPERS (stateless — survive server restarts) ─────────────────
+
+/**
+ * Create a signed session token containing the admin email and expiry time.
+ * The token format is:  base64url(payload) + "." + base64url(HMAC-SHA256)
+ * This matches the format used by api/[...path].js on Vercel so the same
+ * token works on both local dev (server.mjs) and production (Vercel functions).
+ */
+function createToken(email, expiresAt) {
+  const payload = `${email}:${expiresAt}`;
+  const sig = createHmac('sha256', TOKEN_SECRET).update(payload).digest('base64url');
+  return `${Buffer.from(payload).toString('base64url')}.${sig}`;
+}
+
+/**
+ * Verify a signed token. Returns { email, expiresAt } on success, null otherwise.
+ */
+function verifyToken(value) {
+  if (!value || !TOKEN_SECRET) return null;
+  const [encoded, signature] = value.split('.');
+  if (!encoded || !signature) return null;
+  try {
+    const payload  = Buffer.from(encoded, 'base64url').toString();
+    const expected = createHmac('sha256', TOKEN_SECRET).update(payload).digest('base64url');
+    if (signature.length !== expected.length ||
+        !timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
+    const sep      = payload.lastIndexOf(':');
+    if (sep < 1) return null;
+    const email     = payload.slice(0, sep);
+    const expiresAt = Number(payload.slice(sep + 1));
+    if (expiresAt <= Date.now()) return null;
+    return { email, expiresAt };
+  } catch {
+    return null;
+  }
+}
+
 
 // ─── SUPABASE REST HELPERS ────────────────────────────────────────────────────
 
@@ -114,10 +152,8 @@ async function bootstrapAdminIfNeeded() {
 // ─── SESSION HELPERS ──────────────────────────────────────────────────────────
 
 function getSession(req) {
-  const token   = req.headers.authorization?.replace(/^Bearer\s+/i, '');
-  const session = token && sessions.get(token);
-  if (!session || session.expiresAt < Date.now()) return null;
-  return session;
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
+  return verifyToken(token);
 }
 
 // ─── HTTP HELPERS ─────────────────────────────────────────────────────────────
@@ -198,9 +234,9 @@ createServer(async (req, res) => {
         return sendJson(res, 401, { error: 'Invalid email or password.' });
       }
 
-      // Issue session token (8 h)
-      const token = randomBytes(32).toString('hex');
-      sessions.set(token, { email: admin.email, expiresAt: Date.now() + 8 * 60 * 60 * 1000 });
+      // Issue a stateless, signed session token (8 h). It remains valid across
+      // server restarts because it is verified from its signature and expiry.
+      const token = createToken(admin.email, Date.now() + 8 * 60 * 60 * 1000);
       return sendJson(res, 200, { token, email: admin.email });
     } catch (err) {
       console.error('[DMD] Login error:', err.message);
@@ -278,6 +314,64 @@ createServer(async (req, res) => {
     } catch (err) {
       console.error('[DMD] Upload error:', err.message);
       return sendJson(res, 503, { error: err.message || 'Upload failed.' });
+    }
+  }
+
+  // ── POST /api/upload-url  (signed URL for large file uploads) ────────────
+  if (url === '/api/upload-url' && method === 'POST') {
+    try {
+      if (!getSession(req)) return sendJson(res, 401, { error: 'Authentication required.' });
+
+      const { fileName } = await readJson(req);
+      const safeName = String(fileName || 'upload').replace(/[^a-zA-Z0-9._-]/g, '_');
+      const objectPath = `uploads/${Date.now()}-${safeName}`;
+
+      // Ensure the dmd-assets bucket exists and is public
+      const bucketCheck = await fetch(`${SUPABASE_URL}/storage/v1/bucket/dmd-assets`, {
+        headers: sbHeaders(),
+      });
+      if (!bucketCheck.ok && bucketCheck.status === 404) {
+        const createBucket = await fetch(`${SUPABASE_URL}/storage/v1/bucket`, {
+          method: 'POST',
+          headers: sbHeaders(),
+          body: JSON.stringify({ id: 'dmd-assets', name: 'dmd-assets', public: true }),
+        });
+        if (!createBucket.ok) {
+          const err = await createBucket.json().catch(() => ({}));
+          throw new Error(err.message || 'Could not create media bucket.');
+        }
+      } else if (bucketCheck.ok) {
+        const details = await bucketCheck.json().catch(() => null);
+        if (details?.public !== true) {
+          await fetch(`${SUPABASE_URL}/storage/v1/bucket/dmd-assets`, {
+            method: 'PUT',
+            headers: sbHeaders(),
+            body: JSON.stringify({ public: true }),
+          });
+        }
+      }
+
+      // Issue a Supabase signed upload URL so the browser PUTs the file directly
+      const signRes = await fetch(
+        `${SUPABASE_URL}/storage/v1/object/upload/sign/dmd-assets/${objectPath}`,
+        {
+          method: 'POST',
+          headers: sbHeaders(),
+          body: '{}',
+        }
+      );
+      const result = await signRes.json().catch(() => null);
+      if (!signRes.ok || !result?.url) {
+        throw new Error(result?.message || 'Could not create a signed upload URL.');
+      }
+
+      return sendJson(res, 200, {
+        uploadUrl: `${SUPABASE_URL}/storage/v1${result.url}`,
+        publicUrl: `${SUPABASE_URL}/storage/v1/object/public/dmd-assets/${objectPath}`,
+      });
+    } catch (err) {
+      console.error('[DMD] upload-url error:', err.message);
+      return sendJson(res, 503, { error: err.message || 'Could not create upload URL.' });
     }
   }
 
