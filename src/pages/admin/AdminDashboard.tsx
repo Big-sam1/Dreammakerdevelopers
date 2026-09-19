@@ -2732,11 +2732,15 @@ function StatsSection({
       showToast('Counter number cannot be empty.');
       return;
     }
-    setSavingKey(key);
+
+    // 1. Immediately update state and exit edit mode so the new number displays directly without delay!
     const updatedStats = { ...stats, [key]: trimmed };
     setStats(updatedStats);
     updateStats(updatedStats);
+    setEditingKey(null);
+    setEditValue('');
 
+    // 2. Persist directly to Supabase in background
     const saved = await persistStateDirectly((prev) => ({
       ...prev,
       stats: {
@@ -2745,9 +2749,7 @@ function StatsSection({
       },
     }));
 
-    setSavingKey(null);
     if (saved) {
-      setEditingKey(null);
       showToast(`${label} updated to "${trimmed}" and permanently saved to Supabase!`);
     } else {
       showToast('Updated locally — Supabase save failed. Please check connection and retry.');
@@ -3576,9 +3578,16 @@ function PartnersSection({
   };
 
   const handleAdd = async (url: string) => {
+    if (cms.partnerImages.includes(url)) {
+      showToast('This partner logo is already added.');
+      return;
+    }
     const updated = [...cms.partnerImages, url];
     updatePartnerImages(updated);
-    const saved = await persistStateDirectly({ ...cms, partnerImages: updated });
+    const saved = await persistStateDirectly((prev) => ({
+      ...prev,
+      partnerImages: updated,
+    }));
     showToast(saved ? 'Partner logo permanently saved to Supabase!' : 'Added locally — Supabase save failed. Please retry.');
   };
 

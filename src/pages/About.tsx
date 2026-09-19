@@ -16,7 +16,7 @@ export function About() {
   const { cms } = useCMS();
   const hero = cms.pageHeroes.about;
   const team = cms.team;
-  const partnerImages = cms.partnerImages.length > 0 ? cms.partnerImages : [
+  const rawPartnerImages = cms.partnerImages.length > 0 ? cms.partnerImages : [
     '/logo.png',
     '/0ff3ad28-e918-4423-91ef-740844bec2eb.jpg',
     '/256842fa-b28b-4563-986d-bcc0bf612542.jpg',
@@ -25,6 +25,8 @@ export function About() {
     '/67bedf41-d607-4532-8e95-cdbc38a213b5.jpg',
     '/logonav.png',
   ];
+  // Ensure every partner is shown exactly once (no duplicates)
+  const uniquePartners = Array.from(new Set(rawPartnerImages.filter(Boolean)));
   const workflow = cms.workflow;
   const [videoFailed, setVideoFailed] = useState(false);
   // Reset failed state whenever the URL changes (new video uploaded)
@@ -130,14 +132,14 @@ export function About() {
         </div>
       </section>
 
-      {/* Sliding partner images only — live synced from CMS */}
+      {/* Sliding partner images — each partner displayed once without duplication */}
       <section className="border-y border-white/10 bg-forest py-8 overflow-hidden">
-        <div className="relative overflow-hidden w-full">
-          <div className="animate-marquee flex items-center gap-8">
-            {[...partnerImages, ...partnerImages].map((imgSrc, idx) => (
+        <div className="relative overflow-x-auto no-scrollbar w-full">
+          <div className="flex items-center gap-6 sm:gap-10 justify-center py-1 px-6 min-w-max mx-auto">
+            {uniquePartners.map((imgSrc, idx) => (
               <div
-                key={idx}
-                className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-full border-2 border-lime/40 bg-white/10 p-1 shadow-md transition-transform hover:scale-110"
+                key={`${imgSrc}-${idx}`}
+                className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-full border-2 border-lime/40 bg-white/10 p-1 shadow-md transition-all hover:scale-110 hover:border-lime"
               >
                 <img
                   src={imgSrc}
