@@ -3,6 +3,10 @@ import { navLinks as initialNavLinks, company as initialCompany, stats as initia
 import { services as initialServices } from '../data/services';
 import { getCmsStateFromSupabase, saveCmsStateToSupabase, savePublicSubmission } from '../lib/supabase';
 import defaultHeroImage from '../data/heros.png';
+import defaultHomeCtaImage from '../data/5.png';
+import defaultAboutCtaImage from '../data/8.png';
+import defaultServicesCtaImage from '../data/10.png';
+import defaultNewsCtaImage from '../data/11.png';
 
 export type TestimonialItem = {
   id: string;
@@ -431,12 +435,12 @@ const defaultState: CMSState = {
   heroDescription: 'Dream Maker Developers is a technology and innovation company building reliable, scalable, user-centered software, apps, AI, and brands for businesses and communities.',
   heroBackgroundImage: defaultHeroImage,
   ctaSections: {
-    home: { title: "Have an idea? Let's make it real.", description: "Tell us what you're building. We'll come back with a clear plan, an honest timeline, and a team ready to start.", image: '/5.png', imageAlt: 'The Dream Maker Developers studio at work', buttonText: 'Start a project', buttonTo: '/start-project' },
-    about: { title: 'Ready to build your next breakthrough?', description: 'Partner with our dedicated team of architects, developers, and designers to turn your boldest ideas into production-ready digital reality.', image: '/8.png', imageAlt: 'Dream Maker Developers leadership and team', buttonText: 'Start a project', buttonTo: '/start-project' },
-    services: { title: 'Ready to discuss your project scope?', description: 'Whether you need a dedicated development squad, a fixed-milestone digital build, or high-level technical advisory, our engineering leads are ready.', image: '/10.png', imageAlt: 'Dream Maker Developers digital software development dashboard', buttonText: 'Start a project', buttonTo: '/start-project' },
-    projects: { title: 'Inspired by what you see?', description: "Let's build your next flagship product with the same engineering rigor, modern design craft, and scalable architecture.", image: '/5.png', imageAlt: 'Dream Maker Developers reviewing project deliverables', buttonText: 'Start a project', buttonTo: '/start-project' },
-    startProject: { title: 'Ready to transform your vision into reality?', description: 'Partner with Dream Maker Developers to create scalable web, mobile, and AI solutions built to last.', image: '/5.png', imageAlt: 'Dream Maker Developers planning project delivery', buttonText: 'Book a Kickoff Call', buttonTo: '/contact' },
-    news: { title: 'Have an engineering story or project in mind?', description: 'Share your insights with our editorial team or consult with our engineers to build scalable digital solutions.', image: '/11.png', imageAlt: 'DMD development team discussing software engineering insights', buttonText: 'Start a project', buttonTo: '/start-project' },
+    home: { title: "Have an idea? Let's make it real.", description: "Tell us what you're building. We'll come back with a clear plan, an honest timeline, and a team ready to start.", image: defaultHomeCtaImage, imageAlt: 'The Dream Maker Developers studio at work', buttonText: 'Start a project', buttonTo: '/start-project' },
+    about: { title: 'Ready to build your next breakthrough?', description: 'Partner with our dedicated team of architects, developers, and designers to turn your boldest ideas into production-ready digital reality.', image: defaultAboutCtaImage, imageAlt: 'Dream Maker Developers leadership and team', buttonText: 'Start a project', buttonTo: '/start-project' },
+    services: { title: 'Ready to discuss your project scope?', description: 'Whether you need a dedicated development squad, a fixed-milestone digital build, or high-level technical advisory, our engineering leads are ready.', image: defaultServicesCtaImage, imageAlt: 'Dream Maker Developers digital software development dashboard', buttonText: 'Start a project', buttonTo: '/start-project' },
+    projects: { title: 'Inspired by what you see?', description: "Let's build your next flagship product with the same engineering rigor, modern design craft, and scalable architecture.", image: defaultHomeCtaImage, imageAlt: 'Dream Maker Developers reviewing project deliverables', buttonText: 'Start a project', buttonTo: '/start-project' },
+    startProject: { title: 'Ready to transform your vision into reality?', description: 'Partner with Dream Maker Developers to create scalable web, mobile, and AI solutions built to last.', image: defaultHomeCtaImage, imageAlt: 'Dream Maker Developers planning project delivery', buttonText: 'Book a Kickoff Call', buttonTo: '/contact' },
+    news: { title: 'Have an engineering story or project in mind?', description: 'Share your insights with our editorial team or consult with our engineers to build scalable digital solutions.', image: defaultNewsCtaImage, imageAlt: 'DMD development team discussing software engineering insights', buttonText: 'Start a project', buttonTo: '/start-project' },
   },
   navLogo: '/logonav.png',
   footerLogo: '/logo.png',
