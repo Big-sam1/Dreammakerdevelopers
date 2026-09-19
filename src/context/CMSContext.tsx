@@ -730,6 +730,7 @@ const defaultState: CMSState = {
 
 type CMSContextType = {
   cms: CMSState;
+  syncStatus: 'loading' | 'saving' | 'saved' | 'error';
   updateCMS: (updater: (prev: CMSState) => CMSState) => void;
   updateStats: (newStats: CMSState['stats']) => void;
   updateCompany: (newCompany: Partial<CMSState['company']>) => void;
@@ -835,6 +836,7 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
     return defaultState;
   });
   const [isHydrated, setIsHydrated] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<CMSContextType['syncStatus']>('loading');
   // Always retain the newest complete state. Retry logic uses this ref so an
   // older failed request can never overwrite a newer admin edit.
   const latestCmsRef = React.useRef<CMSState>(cms);
@@ -929,7 +931,14 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
 
     const persistLatestState = async (attempt = 0) => {
       const saved = await saveCmsStateToSupabase(latestCmsRef.current);
-      if (saved || attempt >= 3) return;
+      if (saved) {
+        setSyncStatus('saved');
+        return;
+      }
+      if (attempt >= 3) {
+        setSyncStatus('error');
+        return;
+      }
 
       // Keep edits durable when a mobile connection or a serverless function
       // is briefly unavailable. Each retry reads the newest state from the
@@ -941,6 +950,7 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
     };
 
     saveTimerRef.current = setTimeout(() => {
+      setSyncStatus('saving');
       void persistLatestState();
     // Persist on the next event-loop turn. This lets React commit the new
     // state first, while ensuring an admin can safely navigate or refresh
@@ -1205,6 +1215,7 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
     <CMSContext.Provider
       value={{
         cms,
+        syncStatus,
         updateCMS,
         updateStats,
         updateCompany,

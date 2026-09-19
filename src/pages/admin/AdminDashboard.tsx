@@ -134,6 +134,7 @@ export function AdminDashboard() {
   const navigate = useNavigate();
   const {
     cms,
+    syncStatus,
     updateCMS,
     updateStats,
     updateCompany,
@@ -700,6 +701,20 @@ export function AdminDashboard() {
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            <span
+              title={syncStatus === 'error' ? 'Supabase did not confirm this save. Check the server environment variables and sign in again.' : undefined}
+              className={`hidden md:inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-semibold ${
+                syncStatus === 'saved'
+                  ? 'border-lime/40 bg-lime/15 text-lime'
+                  : syncStatus === 'error'
+                    ? 'border-red-400/50 bg-red-500/10 text-red-400'
+                    : isLight
+                      ? 'border-gray-200 bg-gray-50 text-gray-600'
+                      : 'border-cream/15 text-cream/70'
+              }`}
+            >
+              {syncStatus === 'saved' ? 'Saved to Supabase' : syncStatus === 'saving' ? 'Saving…' : syncStatus === 'error' ? 'Save failed' : 'Loading…'}
+            </span>
             {/* Light / Dark Mode Toggle Button */}
             <button
               onClick={() => setThemeMode(isLight ? 'dark' : 'light')}
