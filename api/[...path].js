@@ -109,7 +109,12 @@ async function ensurePublicAssetsBucket() {
 }
 
 export default async function handler(req, res) {
-  const path = (req.url || '').split('?')[0].replace(/^\/api\//, '').replace(/^\//, '');
+  // Vercel may route a one-segment API request through this catch-all as
+  // `/api/[...path]?path=cms-state`. Prefer that route parameter, otherwise
+  // retain the normal local-development URL parsing.
+  const requestUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+  const path = requestUrl.searchParams.get('path')
+    || requestUrl.pathname.replace(/^\/api\//, '').replace(/^\//, '');
 
   try {
     if (path === 'admin/login' && req.method === 'POST') {
