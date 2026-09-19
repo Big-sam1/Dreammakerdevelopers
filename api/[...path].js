@@ -73,17 +73,31 @@ async function supabase(path, options = {}) {
   });
 }
 
-async function saveCmsState(state) {
+async function saveCmsState(state, updatedAt = new Date().toISOString()) {
   const response = await supabase('/rest/v1/cms_state?on_conflict=key', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Prefer: 'resolution=merge-duplicates,return=minimal',
     },
-    body: JSON.stringify({ key: 'primary', state, updated_at: new Date().toISOString() }),
+    body: JSON.stringify({ key: 'primary', state, updated_at: updatedAt }),
   });
   if (!response.ok) throw new Error(await response.text());
+  return updatedAt;
 }
+
+const BUCKET_ALLOWED_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/svg+xml',
+  'image/x-icon',
+  'image/vnd.microsoft.icon',
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+];
 
 // CMS media is intentionally linkable from the public site. Keep the bucket
 // public so the permanent URL returned after an upload can be rendered by an
@@ -92,11 +106,15 @@ async function ensurePublicAssetsBucket() {
   const bucket = await supabase('/storage/v1/bucket/dmd-assets');
   if (bucket.ok) {
     const details = await bucket.json().catch(() => null);
-    if (details?.public === true) return;
+    if (details?.public === true && details?.file_size_limit === 52428800) return;
     const update = await supabase('/storage/v1/bucket/dmd-assets', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ public: true }),
+      body: JSON.stringify({
+        public: true,
+        file_size_limit: 52428800,
+        allowed_mime_types: BUCKET_ALLOWED_MIME_TYPES,
+      }),
     });
     if (update.ok) return;
     throw new Error('The media bucket could not be made public.');
@@ -105,7 +123,13 @@ async function ensurePublicAssetsBucket() {
   const create = await supabase('/storage/v1/bucket', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id: 'dmd-assets', name: 'dmd-assets', public: true }),
+    body: JSON.stringify({
+      id: 'dmd-assets',
+      name: 'dmd-assets',
+      public: true,
+      file_size_limit: 52428800,
+      allowed_mime_types: BUCKET_ALLOWED_MIME_TYPES,
+    }),
   });
   if (!create.ok) throw new Error('The public media bucket could not be created.');
 }
@@ -133,8 +157,9 @@ export default async function handler(req, res) {
       if (!authenticated(req)) return json(res, 401, { error: 'Authentication required.' });
       const { state } = JSON.parse((await readBody(req)).toString() || '{}');
       if (!state || typeof state !== 'object') return json(res, 400, { error: 'A CMS state object is required.' });
-      await saveCmsState(state);
-      return json(res, 200, { ok: true });
+      const updatedAt = new Date().toISOString();
+      await saveCmsState(state, updatedAt);
+      return json(res, 200, { ok: true, updatedAt });
     }
 
     if (path === 'uploads' && req.method === 'POST') {

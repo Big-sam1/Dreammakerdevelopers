@@ -168,6 +168,7 @@ export function AdminDashboard() {
     markSubmissionsRead,
     deleteSubmissions,
     resetToDefaults,
+    persistStateDirectly,
   } = useCMS();
 
   // Authentication check
@@ -868,6 +869,7 @@ export function AdminDashboard() {
           {activeTab === 'testimonials' && (
             <TestimonialsSection
               cms={cms}
+              persistStateDirectly={persistStateDirectly}
               addTestimonial={addTestimonial}
               updateTestimonial={updateTestimonial}
               deleteTestimonial={deleteTestimonial}
@@ -883,6 +885,7 @@ export function AdminDashboard() {
           {activeTab === 'team' && (
             <TeamSection
               cms={cms}
+              persistStateDirectly={persistStateDirectly}
               updateTeamMember={updateTeamMember}
               addTeamMember={addTeamMember}
               deleteTeamMember={deleteTeamMember}
@@ -910,6 +913,7 @@ export function AdminDashboard() {
           {activeTab === 'workflow' && (
             <WorkflowSection
               cms={cms}
+              persistStateDirectly={persistStateDirectly}
               updateWorkflow={updateWorkflow}
               handleFileUpload={handleFileUpload}
               uploadingField={uploadingField}
@@ -934,6 +938,7 @@ export function AdminDashboard() {
           {activeTab === 'projects' && (
             <ProjectsSection
               cms={cms}
+              persistStateDirectly={persistStateDirectly}
               addProject={addProject}
               updateProject={updateProject}
               deleteProject={deleteProject}
@@ -949,6 +954,7 @@ export function AdminDashboard() {
           {activeTab === 'news' && (
             <NewsSection
               cms={cms}
+              persistStateDirectly={persistStateDirectly}
               addNewsArticle={addNewsArticle}
               updateNewsArticle={updateNewsArticle}
               deleteNewsArticle={deleteNewsArticle}
@@ -2783,6 +2789,7 @@ function StatsSection({
    ========================================================================= */
 function TestimonialsSection({
   cms,
+  persistStateDirectly,
   addTestimonial,
   updateTestimonial,
   deleteTestimonial,
@@ -2794,6 +2801,7 @@ function TestimonialsSection({
   inputBgClass,
 }: {
   cms: ReturnType<typeof useCMS>['cms'];
+  persistStateDirectly: ReturnType<typeof useCMS>['persistStateDirectly'];
   addTestimonial: ReturnType<typeof useCMS>['addTestimonial'];
   updateTestimonial: ReturnType<typeof useCMS>['updateTestimonial'];
   deleteTestimonial: ReturnType<typeof useCMS>['deleteTestimonial'];
@@ -2812,7 +2820,7 @@ function TestimonialsSection({
   const [editing, setEditing] = useState<TestimonialItem | null>(null);
 
   const saveTestimonials = async (next: TestimonialItem[]) => {
-    const saved = await saveCmsStateToSupabase({ ...cms, testimonials: next });
+    const saved = await persistStateDirectly({ ...cms, testimonials: next });
     if (!saved) {
       showToast('Not saved: Supabase did not confirm the testimonial update. Please sign in again and retry.');
       return false;
@@ -2981,6 +2989,7 @@ function TestimonialsSection({
    ========================================================================= */
 function TeamSection({
   cms,
+  persistStateDirectly,
   updateTeamMember,
   addTeamMember,
   deleteTeamMember,
@@ -2992,6 +3001,7 @@ function TeamSection({
   inputBgClass,
 }: {
   cms: ReturnType<typeof useCMS>['cms'];
+  persistStateDirectly: ReturnType<typeof useCMS>['persistStateDirectly'];
   updateTeamMember: ReturnType<typeof useCMS>['updateTeamMember'];
   addTeamMember: ReturnType<typeof useCMS>['addTeamMember'];
   deleteTeamMember: ReturnType<typeof useCMS>['deleteTeamMember'];
@@ -3023,9 +3033,9 @@ function TeamSection({
   // Confirm this exact array reaches Supabase before reporting success or
   // closing the editor; the provider then mirrors it locally and live-syncs it.
   const persistTeam = async (nextTeam: TeamMemberItem[]) => {
-    const saved = await saveCmsStateToSupabase({ ...cms, team: nextTeam });
+    const saved = await persistStateDirectly({ ...cms, team: nextTeam });
     if (!saved) {
-      showToast('Team changes were not saved. Please wait for “Saved to Supabase” and try again.');
+      showToast('Team changes were not saved to Supabase. Please try again.');
     }
     return saved;
   };
@@ -3536,6 +3546,7 @@ function PartnersSection({
    ========================================================================= */
 function WorkflowSection({
   cms,
+  persistStateDirectly,
   updateWorkflow,
   handleFileUpload,
   uploadingField,
@@ -3545,6 +3556,7 @@ function WorkflowSection({
   inputBgClass,
 }: {
   cms: ReturnType<typeof useCMS>['cms'];
+  persistStateDirectly: ReturnType<typeof useCMS>['persistStateDirectly'];
   updateWorkflow: ReturnType<typeof useCMS>['updateWorkflow'];
   handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>, f: string, cb: (url: string) => void) => void;
   uploadingField: string | null;
@@ -3554,7 +3566,7 @@ function WorkflowSection({
   inputBgClass: string;
 }) {
   const [workflow, setWorkflow] = useState(
-    cms.workflow || { videoUrl: '', poster: '', title: '', description: '' }
+    cms.workflow || { videoUrl: '', title: '', description: '' }
   );
 
   useEffect(() => {
@@ -3565,8 +3577,8 @@ function WorkflowSection({
 
   const publishWorkflow = async (nextWorkflow: typeof workflow) => {
     updateWorkflow(nextWorkflow);
-    const saved = await saveCmsStateToSupabase({ ...cms, workflow: nextWorkflow });
-    showToast(saved ? 'Workflow video saved and published to the About page.' : 'The file uploaded, but the workflow details could not be saved. Please retry.');
+    const saved = await persistStateDirectly({ ...cms, workflow: nextWorkflow });
+    showToast(saved ? 'Workflow video saved and permanently published to Supabase.' : 'The video uploaded, but the workflow details could not be saved to Supabase. Please retry.');
     return saved;
   };
 
@@ -3580,58 +3592,81 @@ function WorkflowSection({
       <div>
         <h1 className="text-2xl font-bold">Workflow in Action Video</h1>
         <p className={`text-xs ${isLight ? 'text-gray-500' : 'text-cream/60'}`}>
-          Configure the video stream URL, poster thumbnail, and narrative copy on the About page.
+          Upload a permanent MP4 or WebM video directly from your device. The video is previewed below and published live to the About page.
         </p>
       </div>
 
-      <div className={`border rounded-2xl p-6 space-y-4 ${cardBgClass}`}>
+      <div className={`border rounded-2xl p-6 space-y-5 ${cardBgClass}`}>
+        {/* Direct Video Player Display */}
         <div>
-          <label className="text-xs font-medium block mb-1">Video Stream URL (MP4 / WebM):</label>
-          <input
-            type="text"
-            value={workflow?.videoUrl || ''}
-            onChange={(e) => setWorkflow((prev) => ({ ...prev, videoUrl: e.target.value }))}
-            className={`w-full px-3 py-2 rounded-xl text-xs font-mono focus:outline-none ${inputBgClass}`}
-          />
-          <label className="mt-3 block text-xs font-medium">
-            Upload video from device (MP4 / WebM, maximum 100 MB):
-            <input
-              type="file"
-              accept="video/mp4,video/webm"
-              disabled={uploadingField === 'workflowVideo'}
-              onChange={(e) => handleFileUpload(e, 'workflowVideo', async (url) => {
-                const nextWorkflow = { ...workflow, videoUrl: url };
-                setWorkflow(nextWorkflow);
-                await publishWorkflow(nextWorkflow);
-              })}
-              className="mt-1 w-full text-xs file:mr-2 file:py-1.5 file:px-2.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-lime file:text-forest"
-            />
-          </label>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="text-xs font-medium block mb-1">Poster Image URL:</label>
-            <input
-              type="text"
-              value={workflow?.poster || ''}
-              onChange={(e) => setWorkflow((prev) => ({ ...prev, poster: e.target.value }))}
-              className={`w-full px-3 py-2 rounded-xl text-xs font-mono focus:outline-none ${inputBgClass}`}
-            />
-          </div>
-          <div>
-            <label className="text-xs font-medium block mb-1">Upload Poster from Device:</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => handleFileUpload(e, 'wfPoster', async (url) => {
-                const nextWorkflow = { ...workflow, poster: url };
-                setWorkflow(nextWorkflow);
-                await publishWorkflow(nextWorkflow);
-              })}
-              className="w-full text-xs file:mr-2 file:py-1.5 file:px-2.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-lime file:text-forest"
-            />
-          </div>
+          <span className="block text-xs font-semibold mb-2">Video Stream & Direct Preview:</span>
+          {workflow?.videoUrl ? (
+            <div className="space-y-3">
+              <div className="relative overflow-hidden rounded-2xl border border-lime/40 bg-black/60 shadow-lg max-w-2xl">
+                <video
+                  key={workflow.videoUrl}
+                  src={workflow.videoUrl}
+                  controls
+                  playsInline
+                  className="w-full max-h-80 object-contain rounded-2xl"
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-lime/20 text-lime hover:bg-lime/30 text-xs font-semibold cursor-pointer border border-lime/30 transition-colors">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>{uploadingField === 'workflowVideo' ? 'Uploading to Supabase…' : 'Replace Video from Device'}</span>
+                  <input
+                    type="file"
+                    accept="video/mp4,video/webm"
+                    disabled={uploadingField === 'workflowVideo'}
+                    onChange={(e) => handleFileUpload(e, 'workflowVideo', async (url) => {
+                      const nextWorkflow = { ...workflow, videoUrl: url };
+                      setWorkflow(nextWorkflow);
+                      await publishWorkflow(nextWorkflow);
+                    })}
+                    className="hidden"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const nextWorkflow = { ...workflow, videoUrl: '' };
+                    setWorkflow(nextWorkflow);
+                    await publishWorkflow(nextWorkflow);
+                    showToast('Workflow video removed.');
+                  }}
+                  className="px-4 py-2 rounded-xl border border-red-400/30 text-red-400 hover:bg-red-500/10 text-xs font-semibold transition-colors"
+                >
+                  Remove Video
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="rounded-2xl border-2 border-dashed border-lime/30 p-8 text-center bg-lime/5">
+              <div className="mx-auto w-12 h-12 rounded-2xl bg-lime/20 flex items-center justify-center mb-3 text-lime">
+                <Video className="w-6 h-6" />
+              </div>
+              <p className="text-sm font-bold mb-1">No workflow video uploaded yet</p>
+              <p className={`text-xs mb-4 max-w-md mx-auto ${isLight ? 'text-gray-500' : 'text-cream/60'}`}>
+                Upload your MP4 or WebM video file (maximum 50 MB) directly from your device. It will save to Supabase and appear immediately below.
+              </p>
+              <label className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-lime text-forest font-semibold text-xs cursor-pointer shadow-md hover:bg-lime/90 transition-all">
+                <Upload className="w-4 h-4" />
+                <span>{uploadingField === 'workflowVideo' ? 'Uploading to Supabase…' : 'Upload Video from Device'}</span>
+                <input
+                  type="file"
+                  accept="video/mp4,video/webm"
+                  disabled={uploadingField === 'workflowVideo'}
+                  onChange={(e) => handleFileUpload(e, 'workflowVideo', async (url) => {
+                    const nextWorkflow = { ...workflow, videoUrl: url };
+                    setWorkflow(nextWorkflow);
+                    await publishWorkflow(nextWorkflow);
+                  })}
+                  className="hidden"
+                />
+              </label>
+            </div>
+          )}
         </div>
 
         <div>
@@ -3659,7 +3694,7 @@ function WorkflowSection({
         type="submit"
         className="px-6 py-3 rounded-xl bg-lime hover:bg-lime/90 text-forest font-semibold text-sm transition-all shadow-md cursor-pointer"
       >
-        Save Workflow Video
+        Save Workflow Video & Texts
       </button>
     </form>
   );
@@ -3731,6 +3766,7 @@ function ServicesSection({
    ========================================================================= */
 function ProjectsSection({
   cms,
+  persistStateDirectly,
   addProject,
   updateProject,
   deleteProject,
@@ -3742,6 +3778,7 @@ function ProjectsSection({
   inputBgClass,
 }: {
   cms: ReturnType<typeof useCMS>['cms'];
+  persistStateDirectly: ReturnType<typeof useCMS>['persistStateDirectly'];
   addProject: ReturnType<typeof useCMS>['addProject'];
   updateProject: ReturnType<typeof useCMS>['updateProject'];
   deleteProject: ReturnType<typeof useCMS>['deleteProject'];
@@ -3768,7 +3805,7 @@ function ProjectsSection({
   });
 
   const persistProjects = async (nextProjects: ProjectItem[]) => {
-    const saved = await saveCmsStateToSupabase({ ...cms, projects: nextProjects });
+    const saved = await persistStateDirectly({ ...cms, projects: nextProjects });
     if (!saved) showToast('Project change was not saved to Supabase. Please try again.');
     return saved;
   };
@@ -3969,6 +4006,7 @@ function ProjectsSection({
    ========================================================================= */
 function NewsSection({
   cms,
+  persistStateDirectly,
   addNewsArticle,
   updateNewsArticle,
   deleteNewsArticle,
@@ -3980,6 +4018,7 @@ function NewsSection({
   inputBgClass,
 }: {
   cms: ReturnType<typeof useCMS>['cms'];
+  persistStateDirectly: ReturnType<typeof useCMS>['persistStateDirectly'];
   addNewsArticle: ReturnType<typeof useCMS>['addNewsArticle'];
   updateNewsArticle: ReturnType<typeof useCMS>['updateNewsArticle'];
   deleteNewsArticle: ReturnType<typeof useCMS>['deleteNewsArticle'];
@@ -4008,7 +4047,7 @@ function NewsSection({
   });
 
   const persistNews = async (nextArticles: NewsItem[]) => {
-    const saved = await saveCmsStateToSupabase({ ...cms, newsArticles: nextArticles });
+    const saved = await persistStateDirectly({ ...cms, newsArticles: nextArticles });
     if (!saved) showToast('Article change was not saved to Supabase. Please try again.');
     return saved;
   };

@@ -333,11 +333,29 @@ createServer(async (req, res) => {
       const bucketCheck = await fetch(`${SUPABASE_URL}/storage/v1/bucket/dmd-assets`, {
         headers: sbHeaders(),
       });
+      const BUCKET_ALLOWED_MIME_TYPES = [
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'image/gif',
+        'image/svg+xml',
+        'image/x-icon',
+        'image/vnd.microsoft.icon',
+        'video/mp4',
+        'video/webm',
+        'video/quicktime',
+      ];
       if (!bucketCheck.ok && bucketCheck.status === 404) {
         const createBucket = await fetch(`${SUPABASE_URL}/storage/v1/bucket`, {
           method: 'POST',
           headers: sbHeaders(),
-          body: JSON.stringify({ id: 'dmd-assets', name: 'dmd-assets', public: true }),
+          body: JSON.stringify({
+            id: 'dmd-assets',
+            name: 'dmd-assets',
+            public: true,
+            file_size_limit: 52428800,
+            allowed_mime_types: BUCKET_ALLOWED_MIME_TYPES,
+          }),
         });
         if (!createBucket.ok) {
           const err = await createBucket.json().catch(() => ({}));
@@ -345,11 +363,15 @@ createServer(async (req, res) => {
         }
       } else if (bucketCheck.ok) {
         const details = await bucketCheck.json().catch(() => null);
-        if (details?.public !== true) {
+        if (details?.public !== true || details?.file_size_limit !== 52428800) {
           await fetch(`${SUPABASE_URL}/storage/v1/bucket/dmd-assets`, {
             method: 'PUT',
             headers: sbHeaders(),
-            body: JSON.stringify({ public: true }),
+            body: JSON.stringify({
+              public: true,
+              file_size_limit: 52428800,
+              allowed_mime_types: BUCKET_ALLOWED_MIME_TYPES,
+            }),
           });
         }
       }

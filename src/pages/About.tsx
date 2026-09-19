@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { TargetIcon, EyeIcon } from 'lucide-react';
+import { TargetIcon, EyeIcon, Video } from 'lucide-react';
 import { PageHero } from '../components/PageHero';
 import { Eyebrow } from '../components/Eyebrow';
 import { CTASection } from '../components/CTASection';
@@ -194,29 +194,35 @@ export function About() {
 
                 {/* Video Frame */}
                 <div className="mt-5 relative overflow-hidden rounded-2xl bg-forest-deep shadow-md">
-                  {videoFailed ? (
-                    <div className="relative h-56 w-full sm:h-64">
-                      <img src={workflow.poster} alt="Workflow video poster" className="h-full w-full object-cover" />
-                      <p className="absolute inset-x-4 bottom-4 rounded-lg bg-black/70 px-3 py-2 text-center text-xs text-white">Video unavailable. Upload a new MP4/WebM in Admin → Workflow Video.</p>
+                  {workflow.videoUrl && !videoFailed ? (
+                    <video
+                      controls
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      className="h-56 sm:h-64 w-full object-cover"
+                      key={workflow.videoUrl}
+                      preload="metadata"
+                      onError={() => setVideoFailed(true)}
+                    >
+                      <source
+                        src={workflow.videoUrl}
+                        type={workflow.videoUrl.toLowerCase().includes('.webm') ? 'video/webm' : 'video/mp4'}
+                      />
+                      Your browser does not support the video tag.
+                    </video>
+                  ) : (
+                    <div className="relative h-56 sm:h-64 w-full flex flex-col items-center justify-center bg-forest p-6 text-center">
+                      <div className="w-12 h-12 rounded-2xl bg-lime/10 border border-lime/30 flex items-center justify-center mb-3">
+                        <Video className="w-6 h-6 text-lime" />
+                      </div>
+                      <p className="text-sm font-semibold text-cream">Engineering Sprint Walkthrough</p>
+                      <p className="text-xs text-cream/60 mt-1 max-w-xs">
+                        Watch how our cross-functional team collaborates daily on software delivery.
+                      </p>
                     </div>
-                  ) : <video
-                    controls
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    className="h-56 sm:h-64 w-full object-cover"
-                    poster={workflow.poster}
-                    key={workflow.videoUrl}
-                    preload="metadata"
-                    onError={() => setVideoFailed(true)}
-                  >
-                    <source
-                      src={workflow.videoUrl}
-                      type={workflow.videoUrl.toLowerCase().includes('.webm') ? 'video/webm' : 'video/mp4'}
-                    />
-                    Your browser does not support the video tag.
-                  </video>}
+                  )}
                 </div>
 
                 {/* Text about the video */}

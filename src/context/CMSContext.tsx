@@ -215,7 +215,7 @@ export type CMSState = {
   // 8. Workflow Video
   workflow: {
     videoUrl: string;
-    poster: string;
+    poster?: string;
     title: string;
     description: string;
   };
@@ -587,8 +587,7 @@ const defaultState: CMSState = {
   ],
 
   workflow: {
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-software-developer-working-on-code-41315-large.mp4',
-    poster: '/0ff3ad28-e918-4423-91ef-740844bec2eb.jpg',
+    videoUrl: '',
     title: 'Inside Our Agile Engineering Sprints',
     description:
       'This video demonstrates how our cross-functional teams in Kicukiro, Kagarama collaborate daily. From interactive Figma prototypes to cloud deployments, every phase is engineered with precision, peer code reviews, and automated testing.',
@@ -766,6 +765,7 @@ type CMSContextType = {
   markSubmissionsRead: (ids: string[], type: 'projects' | 'contacts', read: boolean) => void;
   deleteSubmissions: (ids: string[], type: 'projects' | 'contacts') => void;
   resetToDefaults: () => void;
+  persistStateDirectly: (nextState: CMSState) => Promise<boolean>;
 };
 
 const CMSContext = createContext<CMSContextType | undefined>(undefined);
@@ -802,7 +802,11 @@ function mergeWithDefaults(parsed: any): CMSState {
     testimonials: Array.isArray(parsed.testimonials) && parsed.testimonials.length > 0 ? parsed.testimonials : defaultState.testimonials,
     team: Array.isArray(parsed.team) && parsed.team.length > 0 ? parsed.team : defaultState.team,
     partnerImages: Array.isArray(parsed.partnerImages) && parsed.partnerImages.length > 0 ? parsed.partnerImages : defaultState.partnerImages,
-    workflow: { ...defaultState.workflow, ...(parsed.workflow || {}) },
+    workflow: {
+      ...defaultState.workflow,
+      ...(parsed.workflow || {}),
+      videoUrl: parsed.workflow?.videoUrl?.includes('assets.mixkit.co') ? '' : (parsed.workflow?.videoUrl || ''),
+    },
     services: Array.isArray(parsed.services) && parsed.services.length > 0 ? parsed.services : defaultState.services,
     projects: Array.isArray(parsed.projects) && parsed.projects.length > 0 ? parsed.projects : defaultState.projects,
     newsArticles: Array.isArray(parsed.newsArticles) && parsed.newsArticles.length > 0 ? parsed.newsArticles : defaultState.newsArticles,
@@ -898,6 +902,7 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
   // Skips re-render when updatedAt hasn't changed → zero unnecessary renders.
   useEffect(() => {
     const poll = async () => {
+      if (syncStatus === 'saving') return;
       const result = await getCmsStateFromSupabase();
       if (!result?.state) return;
       // Only update React state when the server timestamp actually changed
@@ -907,7 +912,7 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
     };
     const interval = window.setInterval(poll, 5_000);
     return () => window.clearInterval(interval);
-  }, []);
+  }, [syncStatus]);
 
   // ── Effect 4a: localStorage + BroadcastChannel update (immediate) ─────────
   useEffect(() => {
@@ -927,7 +932,7 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
     latestCmsRef.current = cms;
   }, [cms]);
 
-  // ── Effect 4b: Supabase save — DEBOUNCED 1.5 s ────────────────────────────
+  // ── Effect 4b: Supabase save — DEBOUNCED 600 ms ──────────────────────────
   // Prevents flooding the database on every keystroke or rapid state change.
   useEffect(() => {
     if (!isHydrated) return;
@@ -936,7 +941,8 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
     const persistLatestState = async () => {
       for (let attempt = 0; attempt <= 3; attempt += 1) {
         const saved = await saveCmsStateToSupabase(latestCmsRef.current);
-        if (saved) {
+        if (saved.ok) {
+          if (saved.updatedAt) lastSyncedAtRef.current = saved.updatedAt;
           setSyncStatus('saved');
           return;
         }
@@ -954,14 +960,26 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
       saveQueueRef.current = saveQueueRef.current
         .catch(() => {})
         .then(persistLatestState);
-    // Persist on the next event-loop turn. This lets React commit the new
-    // state first, while ensuring an admin can safely navigate or refresh
-    // straight after clicking Save or uploading media.
-    }, 0);
+    }, 600);
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
   }, [cms, isHydrated]);
+
+  const persistStateDirectly = async (nextState: CMSState): Promise<boolean> => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    latestCmsRef.current = nextState;
+    setCms(nextState);
+    setSyncStatus('saving');
+    const saved = await saveCmsStateToSupabase(nextState);
+    if (saved.ok) {
+      if (saved.updatedAt) lastSyncedAtRef.current = saved.updatedAt;
+      setSyncStatus('saved');
+      return true;
+    }
+    setSyncStatus('error');
+    return false;
+  };
 
   const updateCMS = (updater: (prev: CMSState) => CMSState) => {
     setCms((prev) => updater(prev));
@@ -1252,6 +1270,7 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
         markSubmissionsRead,
         deleteSubmissions,
         resetToDefaults,
+        persistStateDirectly,
       }}
     >
       {children}

@@ -11,6 +11,11 @@ const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || 
 
 // ─── CMS STATE ────────────────────────────────────────────────────────────────
 
+export type SaveCmsResult = {
+  ok: boolean;
+  updatedAt?: string;
+};
+
 /**
  * Read CMS state DIRECTLY from Supabase (public read RLS, no server proxy).
  * Returns state JSON + updated_at timestamp for change detection.
@@ -44,8 +49,9 @@ export async function getCmsStateFromSupabase(): Promise<{
 
 /**
  * Persist CMS state via the Node.js server (requires admin JWT), with resilient fallback.
+ * Returns { ok: true, updatedAt } with the exact server timestamp on success.
  */
-export async function saveCmsStateToSupabase(state: unknown): Promise<boolean> {
+export async function saveCmsStateToSupabase(state: unknown): Promise<SaveCmsResult> {
   try {
     const token = localStorage.getItem('dmd_admin_token');
     const res = await fetch('/api/cms-state', {
@@ -59,12 +65,14 @@ export async function saveCmsStateToSupabase(state: unknown): Promise<boolean> {
     // A static-hosting rewrite can return index.html with HTTP 200. Only the
     // API's explicit JSON acknowledgement represents a successful save.
     const result = await res.json().catch(() => null);
-    if (res.ok && result?.ok === true) return true;
+    if (res.ok && result?.ok === true) {
+      return { ok: true, updatedAt: result.updatedAt };
+    }
   } catch {
     // If backend server is unreachable (e.g. static Vercel without serverless),
     // state is already safely persisted in localStorage and BroadcastChannel.
   }
-  return false;
+  return { ok: false };
 }
 
 // ─── ADMIN AUTH ───────────────────────────────────────────────────────────────
@@ -109,18 +117,43 @@ export async function loginWithSupabase(
 // ─── FILE UPLOADS -> SUPABASE STORAGE (via server with client fallback) ───────
 
 /**
+ * Resolve MIME type based on file object and extension fallback.
+ */
+export function resolveFileMimeType(file: File): string {
+  if (file.type && file.type.trim() && file.type !== 'application/octet-stream') {
+    return file.type;
+  }
+  const ext = file.name.split('.').pop()?.toLowerCase() || '';
+  const map: Record<string, string> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+    gif: 'image/gif',
+    svg: 'image/svg+xml',
+    ico: 'image/x-icon',
+    mp4: 'video/mp4',
+    m4v: 'video/mp4',
+    webm: 'video/webm',
+    mov: 'video/quicktime',
+  };
+  return map[ext] || 'application/octet-stream';
+}
+
+/**
  * Upload any image/video through an authenticated, server-issued Supabase
- * signed URL.  Sending files to Storage directly avoids serverless request
+ * signed URL. Sending files to Storage directly avoids serverless request
  * body limits and makes the returned URL permanent, public CMS content.
  */
 export async function uploadImageToSupabase(file: File): Promise<string> {
   const token = localStorage.getItem('dmd_admin_token');
+  const contentType = resolveFileMimeType(file);
 
   try {
     const signedRes = await fetch('/api/upload-url', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: JSON.stringify({ fileName: file.name, contentType: file.type || 'application/octet-stream' }),
+      body: JSON.stringify({ fileName: file.name, contentType }),
     });
     const signed = await signedRes.json().catch(() => null);
     if (!signedRes.ok || !signed?.uploadUrl || !signed?.publicUrl) {
@@ -128,10 +161,32 @@ export async function uploadImageToSupabase(file: File): Promise<string> {
     }
     const directUpload = await fetch(signed.uploadUrl, {
       method: 'PUT',
-      headers: { 'Content-Type': file.type || 'application/octet-stream' },
+      headers: { 'Content-Type': contentType },
       body: file,
     });
-    if (!directUpload.ok) throw new Error('Supabase did not accept the file. Please retry.');
+    if (!directUpload.ok) {
+      // Fallback for smaller files (<= 4 MB) via server proxy
+      if (file.size <= 4_000_000) {
+        try {
+          const fallbackRes = await fetch('/api/uploads', {
+            method: 'POST',
+            headers: {
+              'Content-Type': contentType,
+              'x-file-name': encodeURIComponent(file.name),
+              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            },
+            body: file,
+          });
+          const fallback = await fallbackRes.json().catch(() => null);
+          if (fallbackRes.ok && fallback?.url) {
+            return fallback.url as string;
+          }
+        } catch {
+          // Continue to throw direct upload error
+        }
+      }
+      throw new Error('Supabase did not accept the file. Please retry.');
+    }
     return signed.publicUrl as string;
   } catch (error) {
     if (error instanceof Error) throw error;
