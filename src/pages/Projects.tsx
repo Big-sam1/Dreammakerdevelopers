@@ -313,10 +313,23 @@ export function Projects() {
                     <span className="text-xs font-semibold text-forest/40 uppercase tracking-wider">
                       Case Study
                     </span>
-                    <span className="inline-flex items-center gap-1 text-xs font-bold text-forest transition-colors group-hover:text-lime-dark">
-                      Explore architecture
-                      <ArrowUpRightIcon className="h-3.5 w-3.5" />
-                    </span>
+                    {(project as any).link ? (
+                      <a
+                        href={(project as any).link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs font-bold text-forest transition-colors group-hover:text-lime-dark hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        View Project
+                        <ArrowUpRightIcon className="h-3.5 w-3.5" />
+                      </a>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-forest/40">
+                        Explore architecture
+                        <ArrowUpRightIcon className="h-3.5 w-3.5" />
+                      </span>
+                    )}
                   </div>
                 </div>
               </article>

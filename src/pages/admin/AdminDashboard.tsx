@@ -159,6 +159,8 @@ export function AdminDashboard() {
     deleteTeamMember,
     updatePartnerImages,
     updateService,
+    addService,
+    deleteService,
     addBranch,
     updateBranch,
     deleteBranch,
@@ -429,10 +431,6 @@ export function AdminDashboard() {
           </div>
 
           {[
-            { id: 'titles', label: 'Section Titles & Text', icon: Edit3 },
-            { id: 'branding', label: 'Logos & Favicon', icon: Palette },
-            { id: 'heroes', label: 'Page Heroes & Texts', icon: Layers },
-            { id: 'ctas', label: 'Call to Action Sections', icon: Sparkles },
             { id: 'stats', label: 'Numbers & Counters', icon: BarChart3 },
             { id: 'testimonials', label: 'Client Stories', icon: MessageSquareQuote },
             { id: 'team', label: 'Our Team (10 Staff)', icon: Users },
@@ -601,10 +599,6 @@ export function AdminDashboard() {
           </div>
 
           {[
-            { id: 'titles', label: 'Section Titles & Text', icon: Edit3 },
-            { id: 'branding', label: 'Logos & Favicon', icon: Palette },
-            { id: 'heroes', label: 'Page Heroes & Texts', icon: Layers },
-            { id: 'ctas', label: 'Call to Action Sections', icon: Sparkles },
             { id: 'stats', label: 'Numbers & Counters', icon: BarChart3 },
             { id: 'testimonials', label: 'Client Stories', icon: MessageSquareQuote },
             { id: 'team', label: 'Our Team (10 Staff)', icon: Users },
@@ -788,16 +782,7 @@ export function AdminDashboard() {
             />
           )}
 
-          {activeTab === 'titles' && (
-            <SectionTitlesSection
-              cms={cms}
-              updateSectionTitles={updateSectionTitles}
-              showToast={showToast}
-              isLight={isLight}
-              cardBgClass={cardBgClass}
-              inputBgClass={inputBgClass}
-            />
-          )}
+
 
           {activeTab === 'profile' && (
             <AdminProfileSection
@@ -823,41 +808,16 @@ export function AdminDashboard() {
             />
           )}
 
-          {activeTab === 'branding' && (
-            <BrandingSection
-              cms={cms}
-              updateLogos={updateLogos}
-              handleFileUpload={handleFileUpload}
-              uploadingField={uploadingField}
-              showToast={showToast}
-              isLight={isLight}
-              cardBgClass={cardBgClass}
-              inputBgClass={inputBgClass}
-            />
-          )}
 
-          {activeTab === 'heroes' && (
-            <PageHeroesSection
-              cms={cms}
-              updateCMS={updateCMS}
-              updatePageHero={updatePageHero}
-              updateHeroDescription={updateHeroDescription}
-              handleFileUpload={handleFileUpload}
-              uploadingField={uploadingField}
-              showToast={showToast}
-              isLight={isLight}
-              cardBgClass={cardBgClass}
-              inputBgClass={inputBgClass}
-            />
-          )}
 
-          {activeTab === 'ctas' && (
-            <CTASectionsEditor cms={cms} updateCtaSection={updateCtaSection} showToast={showToast} isLight={isLight} cardBgClass={cardBgClass} inputBgClass={inputBgClass} />
-          )}
+
+
+
 
           {activeTab === 'stats' && (
             <StatsSection
               cms={cms}
+              persistStateDirectly={persistStateDirectly}
               updateStats={updateStats}
               showToast={showToast}
               isLight={isLight}
@@ -901,6 +861,7 @@ export function AdminDashboard() {
           {activeTab === 'partners' && (
             <PartnersSection
               cms={cms}
+              persistStateDirectly={persistStateDirectly}
               updatePartnerImages={updatePartnerImages}
               handleFileUpload={handleFileUpload}
               uploadingField={uploadingField}
@@ -927,7 +888,10 @@ export function AdminDashboard() {
           {activeTab === 'services' && (
             <ServicesSection
               cms={cms}
+              persistStateDirectly={persistStateDirectly}
               updateService={updateService}
+              addService={addService}
+              deleteService={deleteService}
               showToast={showToast}
               isLight={isLight}
               cardBgClass={cardBgClass}
@@ -970,6 +934,7 @@ export function AdminDashboard() {
           {activeTab === 'workspaces' && (
             <WorkspaceSection
               cms={cms}
+              persistStateDirectly={persistStateDirectly}
               updateWorkspaceImages={updateWorkspaceImages}
               handleFileUpload={handleFileUpload}
               uploadingField={uploadingField}
@@ -2718,6 +2683,7 @@ function CTASectionsEditor({ cms, updateCtaSection, showToast, isLight, cardBgCl
 
 function StatsSection({
   cms,
+  persistStateDirectly,
   updateStats,
   showToast,
   isLight,
@@ -2725,6 +2691,7 @@ function StatsSection({
   inputBgClass,
 }: {
   cms: ReturnType<typeof useCMS>['cms'];
+  persistStateDirectly: ReturnType<typeof useCMS>['persistStateDirectly'];
   updateStats: ReturnType<typeof useCMS>['updateStats'];
   showToast: (m: string) => void;
   isLight: boolean;
@@ -2739,10 +2706,11 @@ function StatsSection({
     }
   }, [cms.stats]);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     updateStats(stats);
-    showToast('Public counters updated live!');
+    const saved = await persistStateDirectly({ ...cms, stats });
+    showToast(saved ? 'Counter numbers saved permanently to Supabase!' : 'Numbers updated locally but not saved to Supabase. Please retry.');
   };
 
   return (
@@ -3462,6 +3430,7 @@ function TeamSection({
    ========================================================================= */
 function PartnersSection({
   cms,
+  persistStateDirectly,
   updatePartnerImages,
   handleFileUpload,
   uploadingField,
@@ -3470,6 +3439,7 @@ function PartnersSection({
   cardBgClass,
 }: {
   cms: ReturnType<typeof useCMS>['cms'];
+  persistStateDirectly: ReturnType<typeof useCMS>['persistStateDirectly'];
   updatePartnerImages: ReturnType<typeof useCMS>['updatePartnerImages'];
   handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>, f: string, cb: (url: string) => void) => void;
   uploadingField: string | null;
@@ -3480,15 +3450,18 @@ function PartnersSection({
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 8;
 
-  const handleDelete = (index: number) => {
+  const handleDelete = async (index: number) => {
     const updated = cms.partnerImages.filter((_, i) => i !== index);
     updatePartnerImages(updated);
-    showToast('Partner logo removed.');
+    const saved = await persistStateDirectly({ ...cms, partnerImages: updated });
+    showToast(saved ? 'Partner logo permanently removed from Supabase.' : 'Removed locally — Supabase save failed. Please retry.');
   };
 
-  const handleAdd = (url: string) => {
-    updatePartnerImages([...cms.partnerImages, url]);
-    showToast('Partner logo added!');
+  const handleAdd = async (url: string) => {
+    const updated = [...cms.partnerImages, url];
+    updatePartnerImages(updated);
+    const saved = await persistStateDirectly({ ...cms, partnerImages: updated });
+    showToast(saved ? 'Partner logo permanently saved to Supabase!' : 'Added locally — Supabase save failed. Please retry.');
   };
 
   const partnerImages = cms.partnerImages || [];
@@ -3705,14 +3678,20 @@ function WorkflowSection({
    ========================================================================= */
 function ServicesSection({
   cms,
+  persistStateDirectly,
   updateService,
+  addService,
+  deleteService,
   showToast,
   isLight,
   cardBgClass,
   inputBgClass,
 }: {
   cms: ReturnType<typeof useCMS>['cms'];
+  persistStateDirectly: ReturnType<typeof useCMS>['persistStateDirectly'];
   updateService: ReturnType<typeof useCMS>['updateService'];
+  addService: ReturnType<typeof useCMS>['addService'];
+  deleteService: ReturnType<typeof useCMS>['deleteService'];
   showToast: (m: string) => void;
   isLight: boolean;
   cardBgClass: string;
@@ -3720,40 +3699,121 @@ function ServicesSection({
 }) {
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [draft, setDraft] = useState<ServiceItem | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [newService, setNewService] = useState<Partial<ServiceItem>>({
+    title: '', summary: '', details: '', deliverables: [], slug: '',
+  });
+
+  const saveServices = async (updated: ServiceItem[]) => {
+    const saved = await persistStateDirectly({ ...cms, services: updated });
+    if (!saved) showToast('Saved locally — Supabase save failed. Please retry.');
+    return saved;
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (draft === null || editingIndex === null) return;
+    const updated = [...(cms.services || [])];
+    updated[editingIndex] = draft;
+    if (!await saveServices(updated)) return;
+    updateService(editingIndex, draft);
+    setEditingIndex(null);
+    setDraft(null);
+    showToast('Service updated and permanently saved.');
+  };
+
+  const handleAddNew = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newService.title) return;
+    const service: ServiceItem = {
+      slug: newService.title!.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      title: newService.title!,
+      summary: newService.summary || '',
+      details: newService.details || '',
+      deliverables: newService.deliverables || [],
+    };
+    const updated = [...(cms.services || []), service];
+    if (!await saveServices(updated)) return;
+    addService(service);
+    setShowAdd(false);
+    setNewService({ title: '', summary: '', details: '', deliverables: [], slug: '' });
+    showToast('New service permanently saved to Supabase!');
+  };
+
+  const handleDelete = async (idx: number) => {
+    const srv = cms.services[idx];
+    if (!window.confirm(`Delete service "${srv.title}"?`)) return;
+    const updated = (cms.services || []).filter((_, i) => i !== idx);
+    if (!await saveServices(updated)) return;
+    deleteService(idx);
+    showToast(`Service "${srv.title}" permanently deleted.`);
+  };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">
-          {cms.sectionTitles?.servicesTitle || 'Engineered For Scale & Performance'}
-        </h1>
-        <p className={`text-xs ${isLight ? 'text-gray-500' : 'text-cream/60'}`}>
-          Edit service titles, summaries, in-depth descriptions, and deliverables.
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold">
+            {cms.sectionTitles?.servicesTitle || 'Engineered For Scale & Performance'}
+          </h1>
+          <p className={`text-xs ${isLight ? 'text-gray-500' : 'text-cream/60'}`}>
+            Edit, add, or delete services. All changes save permanently to Supabase.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowAdd(!showAdd)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-lime text-forest font-semibold text-xs cursor-pointer shadow-sm"
+        >
+          <Plus className="w-4 h-4" />
+          <span>Add Service</span>
+        </button>
       </div>
+
+      {showAdd && (
+        <form onSubmit={handleAddNew} className={`border rounded-2xl p-6 space-y-4 shadow-xl ${cardBgClass}`}>
+          <h3 className="text-sm font-bold">New Service</h3>
+          <input required placeholder="Service Title" value={newService.title} onChange={(e) => setNewService({ ...newService, title: e.target.value })} className={`w-full rounded-xl px-3 py-2 text-sm ${inputBgClass}`} />
+          <input placeholder="Short Summary" value={newService.summary} onChange={(e) => setNewService({ ...newService, summary: e.target.value })} className={`w-full rounded-xl px-3 py-2 text-sm ${inputBgClass}`} />
+          <textarea rows={4} placeholder="Full description" value={newService.details} onChange={(e) => setNewService({ ...newService, details: e.target.value })} className={`w-full rounded-xl px-3 py-2 text-sm ${inputBgClass}`} />
+          <input placeholder="Deliverables (comma separated)" value={(newService.deliverables || []).join(', ')} onChange={(e) => setNewService({ ...newService, deliverables: e.target.value.split(',').map(d => d.trim()).filter(Boolean) })} className={`w-full rounded-xl px-3 py-2 text-sm ${inputBgClass}`} />
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setShowAdd(false)} className="px-4 py-2 text-xs opacity-60">Cancel</button>
+            <button type="submit" className="rounded-xl bg-lime px-4 py-2 text-sm font-semibold text-forest">Add Service</button>
+          </div>
+        </form>
+      )}
 
       <div className={`overflow-hidden rounded-2xl border ${cardBgClass}`}>
         <div className="grid grid-cols-[auto_1fr_auto] gap-4 border-b px-5 py-3 text-[11px] font-bold uppercase tracking-wider opacity-60">
-          <span>#</span><span>Service</span><span>Action</span>
+          <span>#</span><span>Service</span><span>Actions</span>
         </div>
         {(cms.services || []).map((srv, idx) => (
           <div key={srv.slug || idx} className="grid grid-cols-[auto_1fr_auto] items-center gap-4 border-b px-5 py-4 last:border-0">
             <span className="text-xs opacity-50">{idx + 1}</span>
-            <button onClick={() => { setEditingIndex(idx); setDraft({ ...srv, deliverables: [...srv.deliverables] }); }} className="min-w-0 text-left"><strong className="block truncate text-sm">{srv.title}</strong><span className="block truncate text-xs opacity-60">{srv.summary}</span></button>
-            <button onClick={() => { setEditingIndex(idx); setDraft({ ...srv, deliverables: [...srv.deliverables] }); }} className="rounded-lg border p-2 hover:bg-lime/20" title="Edit service"><Edit3 className="h-4 w-4" /></button>
+            <button onClick={() => { setEditingIndex(idx); setDraft({ ...srv, deliverables: [...srv.deliverables] }); }} className="min-w-0 text-left">
+              <strong className="block truncate text-sm">{srv.title}</strong>
+              <span className="block truncate text-xs opacity-60">{srv.summary}</span>
+            </button>
+            <div className="flex items-center gap-1.5">
+              <button onClick={() => { setEditingIndex(idx); setDraft({ ...srv, deliverables: [...srv.deliverables] }); }} className="rounded-lg border p-2 hover:bg-lime/20" title="Edit service"><Edit3 className="h-4 w-4" /></button>
+              <button onClick={() => handleDelete(idx)} className="rounded-lg border p-2 text-red-400 hover:bg-red-500/10" title="Delete service"><Trash2 className="h-4 w-4" /></button>
+            </div>
           </div>
         ))}
+        {(cms.services || []).length === 0 && (
+          <p className="px-5 py-6 text-xs opacity-50 text-center">No services yet. Click "Add Service" to create one.</p>
+        )}
       </div>
 
       {draft && editingIndex !== null && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/55 p-4">
-          <form onSubmit={(e) => { e.preventDefault(); updateService(editingIndex, draft); setEditingIndex(null); setDraft(null); showToast('Service updated and saved.'); }} className={`w-full max-w-2xl rounded-2xl border p-6 space-y-4 shadow-2xl ${cardBgClass}`}>
-            <div className="flex items-center justify-between"><h2 className="font-bold">Edit service</h2><button type="button" onClick={() => { setEditingIndex(null); setDraft(null); }}><X className="w-5 h-5" /></button></div>
+          <form onSubmit={handleSaveEdit} className={`w-full max-w-2xl rounded-2xl border p-6 space-y-4 shadow-2xl ${cardBgClass}`}>
+            <div className="flex items-center justify-between"><h2 className="font-bold">Edit Service</h2><button type="button" onClick={() => { setEditingIndex(null); setDraft(null); }}><X className="w-5 h-5" /></button></div>
             <input value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} className={`w-full rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Title" />
             <input value={draft.summary} onChange={(e) => setDraft({ ...draft, summary: e.target.value })} className={`w-full rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Summary" />
             <textarea rows={5} value={draft.details} onChange={(e) => setDraft({ ...draft, details: e.target.value })} className={`w-full rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Full description" />
             <input value={draft.deliverables.join(', ')} onChange={(e) => setDraft({ ...draft, deliverables: e.target.value.split(',').map((item) => item.trim()).filter(Boolean) })} className={`w-full rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Deliverables, comma separated" />
-            <div className="flex justify-end gap-2"><button type="button" onClick={() => { setEditingIndex(null); setDraft(null); }} className="px-4 py-2 text-sm">Cancel</button><button className="rounded-xl bg-lime px-4 py-2 text-sm font-semibold text-forest">Save changes</button></div>
+            <div className="flex justify-end gap-2"><button type="button" onClick={() => { setEditingIndex(null); setDraft(null); }} className="px-4 py-2 text-sm">Cancel</button><button type="submit" className="rounded-xl bg-lime px-4 py-2 text-sm font-semibold text-forest">Save Changes</button></div>
           </form>
         </div>
       )}
@@ -3984,7 +4044,8 @@ function ProjectsSection({
             <input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} className={`w-full rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Title" />
             <div className="grid gap-3 sm:grid-cols-2"><input value={editing.categoryLabel} onChange={(e) => setEditing({ ...editing, categoryLabel: e.target.value })} className={`rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Category" /><input value={editing.impact} onChange={(e) => setEditing({ ...editing, impact: e.target.value })} className={`rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Impact" /></div>
             <textarea rows={4} value={editing.summary} onChange={(e) => setEditing({ ...editing, summary: e.target.value })} className={`w-full rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Summary" />
-            <input value={editing.tags.join(', ')} onChange={(e) => setEditing({ ...editing, tags: e.target.value.split(',').map((tag) => tag.trim()).filter(Boolean) })} className={`w-full rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Tags" />
+            <input value={editing.tags.join(', ')} onChange={(e) => setEditing({ ...editing, tags: e.target.value.split(',').map((tag) => tag.trim()).filter(Boolean) })} className={`w-full rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Tags (comma separated)" />
+            <input value={editing.link || ''} onChange={(e) => setEditing({ ...editing, link: e.target.value })} className={`w-full rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Live Project URL (e.g. https://myproject.com)" />
             <div className="flex justify-end gap-2"><button type="button" onClick={() => setEditing(null)} className="px-4 py-2 text-sm">Cancel</button><button className="rounded-xl bg-lime px-4 py-2 text-sm font-semibold text-forest">Save changes</button></div>
           </form>
         </div>
@@ -4266,6 +4327,7 @@ function NewsSection({
    ========================================================================= */
 function WorkspaceSection({
   cms,
+  persistStateDirectly,
   updateWorkspaceImages,
   handleFileUpload,
   uploadingField,
@@ -4275,6 +4337,7 @@ function WorkspaceSection({
   inputBgClass,
 }: {
   cms: ReturnType<typeof useCMS>['cms'];
+  persistStateDirectly: ReturnType<typeof useCMS>['persistStateDirectly'];
   updateWorkspaceImages: ReturnType<typeof useCMS>['updateWorkspaceImages'];
   handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>, f: string, cb: (url: string) => void) => void;
   uploadingField: string | null;
@@ -4285,10 +4348,13 @@ function WorkspaceSection({
 }) {
   const [images, setImages] = useState(cms.workspaceImages);
 
-  const handleSave = (e: React.FormEvent) => {
+  useEffect(() => { setImages(cms.workspaceImages); }, [cms.workspaceImages]);
+
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     updateWorkspaceImages(images);
-    showToast('Kagarama Hub workspace photos saved!');
+    const saved = await persistStateDirectly({ ...cms, workspaceImages: images });
+    showToast(saved ? 'Kagarama Hub photos permanently saved to Supabase!' : 'Saved locally — Supabase save failed. Please retry.');
   };
 
   return (
@@ -4325,7 +4391,13 @@ function WorkspaceSection({
                   type="file"
                   accept="image/*"
                   onChange={(e) =>
-                    handleFileUpload(e, hub.key, (url) => setImages((prev) => ({ ...prev, [imgKey]: url })))
+                    handleFileUpload(e, hub.key, async (url) => {
+                      const next = { ...images, [imgKey]: url };
+                      setImages(next);
+                      updateWorkspaceImages(next);
+                      const saved = await persistStateDirectly({ ...cms, workspaceImages: next });
+                      showToast(saved ? `${hub.label} photo permanently saved to Supabase!` : 'Uploaded locally — Supabase save failed. Please retry.');
+                    })
                   }
                   className="w-full text-xs file:mr-2 file:py-1.5 file:px-2.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-lime file:text-forest"
                 />

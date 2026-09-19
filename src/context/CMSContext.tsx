@@ -754,6 +754,8 @@ type CMSContextType = {
   deleteTeamMember: (index: number) => void;
   updatePartnerImages: (images: string[]) => void;
   updateService: (index: number, service: ServiceItem) => void;
+  addService: (service: ServiceItem) => void;
+  deleteService: (index: number) => void;
   addProjectSubmission: (sub: Omit<ProjectSubmission, 'id' | 'createdAt'>) => void;
   addContactSubmission: (sub: Omit<ContactSubmission, 'id' | 'createdAt'>) => void;
   addBranch: (branch: BranchLocation) => void;
@@ -1114,6 +1116,14 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  const addService = (service: ServiceItem) => {
+    setCms((prev) => ({ ...prev, services: [...prev.services, service] }));
+  };
+
+  const deleteService = (index: number) => {
+    setCms((prev) => ({ ...prev, services: prev.services.filter((_, i) => i !== index) }));
+  };
+
   const addProjectSubmission = (sub: Omit<ProjectSubmission, 'id' | 'createdAt'>) => {
     const newSub: ProjectSubmission = {
       ...sub,
@@ -1259,6 +1269,8 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
         deleteTeamMember,
         updatePartnerImages,
         updateService,
+        addService,
+        deleteService,
         addProjectSubmission,
         addContactSubmission,
         addBranch,
