@@ -503,14 +503,7 @@ export function StartProject() {
       </section>
 
       {/* Page-specific CTA container with custom image for Start a Project page */}
-      <CTASection
-        title="Ready to transform your vision into reality?"
-        description="Partner with Dream Maker Developers to create scalable web, mobile, and AI solutions built to last."
-        image="/256842fa-b28b-4563-986d-bcc0bf612542.jpg"
-        imageAlt="Dream Maker Developers planning project delivery"
-        buttonText="Book a Kickoff Call"
-        buttonTo="/contact"
-      />
+      <CTASection {...cms.ctaSections.startProject} />
     </>
   );
 }

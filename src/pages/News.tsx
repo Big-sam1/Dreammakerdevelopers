@@ -285,7 +285,7 @@ export function News() {
               The Official Journal of Dream Maker Developers
             </span>
             <h1 className="mt-2 font-display text-4xl sm:text-6xl font-extrabold tracking-tight uppercase text-forest">
-              DMD CHRONICLE
+              DMD NEW-TIMES
             </h1>
             <p className="mt-1 text-xs text-forest/50">
               Technology • Artificial Intelligence • Product Craft • Kigali, Rwanda
@@ -631,12 +631,7 @@ export function News() {
       )}
 
       {/* 5. Page-specific CTA container with custom image for News page */}
-      <CTASection
-        title="Have an engineering story or project in mind?"
-        description="Share your insights with our editorial team or consult with our engineers to build scalable digital solutions."
-        image="/0ff3ad28-e918-4423-91ef-740844bec2eb.jpg"
-        imageAlt="DMD development team discussing software engineering insights"
-      />
+      <CTASection {...cms.ctaSections.news} />
     </div>
   );
 }

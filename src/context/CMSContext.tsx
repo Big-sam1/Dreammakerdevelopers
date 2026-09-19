@@ -141,9 +141,22 @@ export type PageHeroItem = {
   overlayOpacity?: number;
 };
 
+export type CTASectionItem = {
+  title: string;
+  description: string;
+  image: string;
+  imageAlt: string;
+  buttonText: string;
+  buttonTo: string;
+};
+
+export type CTASectionKey = 'home' | 'about' | 'services' | 'projects' | 'startProject' | 'news';
+
 export type CMSState = {
   heroPhrases: string[];
+  heroDescription: string;
   heroBackgroundImage: string;
+  ctaSections: Record<CTASectionKey, CTASectionItem>;
   // 1. Branding & Logos
   navLogo: string;
   footerLogo: string;
@@ -415,7 +428,16 @@ const initialBranches: BranchLocation[] = [
 
 const defaultState: CMSState = {
   heroPhrases: ['digital reality', 'scalable software', 'intelligent experiences'],
+  heroDescription: 'Dream Maker Developers is a technology and innovation company building reliable, scalable, user-centered software, apps, AI, and brands for businesses and communities.',
   heroBackgroundImage: defaultHeroImage,
+  ctaSections: {
+    home: { title: "Have an idea? Let's make it real.", description: "Tell us what you're building. We'll come back with a clear plan, an honest timeline, and a team ready to start.", image: '/5.png', imageAlt: 'The Dream Maker Developers studio at work', buttonText: 'Start a project', buttonTo: '/start-project' },
+    about: { title: 'Ready to build your next breakthrough?', description: 'Partner with our dedicated team of architects, developers, and designers to turn your boldest ideas into production-ready digital reality.', image: '/8.png', imageAlt: 'Dream Maker Developers leadership and team', buttonText: 'Start a project', buttonTo: '/start-project' },
+    services: { title: 'Ready to discuss your project scope?', description: 'Whether you need a dedicated development squad, a fixed-milestone digital build, or high-level technical advisory, our engineering leads are ready.', image: '/10.png', imageAlt: 'Dream Maker Developers digital software development dashboard', buttonText: 'Start a project', buttonTo: '/start-project' },
+    projects: { title: 'Inspired by what you see?', description: "Let's build your next flagship product with the same engineering rigor, modern design craft, and scalable architecture.", image: '/5.png', imageAlt: 'Dream Maker Developers reviewing project deliverables', buttonText: 'Start a project', buttonTo: '/start-project' },
+    startProject: { title: 'Ready to transform your vision into reality?', description: 'Partner with Dream Maker Developers to create scalable web, mobile, and AI solutions built to last.', image: '/5.png', imageAlt: 'Dream Maker Developers planning project delivery', buttonText: 'Book a Kickoff Call', buttonTo: '/contact' },
+    news: { title: 'Have an engineering story or project in mind?', description: 'Share your insights with our editorial team or consult with our engineers to build scalable digital solutions.', image: '/11.png', imageAlt: 'DMD development team discussing software engineering insights', buttonText: 'Start a project', buttonTo: '/start-project' },
+  },
   navLogo: '/logonav.png',
   footerLogo: '/logo.png',
   brandName: 'Dream Maker',
@@ -699,6 +721,8 @@ type CMSContextType = {
   updateWorkflow: (workflow: CMSState['workflow']) => void;
   updateWorkspaceImages: (images: CMSState['workspaceImages']) => void;
   updatePageHero: (page: keyof CMSState['pageHeroes'], data: Partial<PageHeroItem>) => void;
+  updateCtaSection: (page: CTASectionKey, data: Partial<CTASectionItem>) => void;
+  updateHeroDescription: (description: string) => void;
   addProject: (project: ProjectItem) => void;
   updateProject: (project: ProjectItem) => void;
   deleteProject: (id: string) => void;
@@ -744,6 +768,11 @@ function mergeWithDefaults(parsed: any): CMSState {
     heroPhrases: Array.isArray(parsed.heroPhrases) && parsed.heroPhrases.filter(Boolean).length > 0
       ? parsed.heroPhrases.filter((phrase: unknown) => typeof phrase === 'string' && phrase.trim()).slice(0, 3)
       : defaultState.heroPhrases,
+    heroDescription: typeof parsed.heroDescription === 'string' ? parsed.heroDescription : defaultState.heroDescription,
+    ctaSections: (Object.keys(defaultState.ctaSections) as CTASectionKey[]).reduce((sections, key) => {
+      sections[key] = { ...defaultState.ctaSections[key], ...(parsed.ctaSections?.[key] || {}) };
+      return sections;
+    }, {} as Record<CTASectionKey, CTASectionItem>),
     stats: { ...defaultState.stats, ...(parsed.stats || {}) },
     company: { ...defaultState.company, ...(parsed.company || {}) },
     socialLinks: Array.isArray(parsed.socialLinks) && parsed.socialLinks.length > 0 ? parsed.socialLinks : defaultState.socialLinks,
@@ -947,6 +976,17 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
     }));
   };
 
+  const updateCtaSection = (page: CTASectionKey, data: Partial<CTASectionItem>) => {
+    setCms((prev) => ({
+      ...prev,
+      ctaSections: { ...prev.ctaSections, [page]: { ...prev.ctaSections[page], ...data } },
+    }));
+  };
+
+  const updateHeroDescription = (heroDescription: string) => {
+    setCms((prev) => ({ ...prev, heroDescription }));
+  };
+
   const addProject = (project: ProjectItem) => {
     setCms((prev) => ({ ...prev, projects: [project, ...prev.projects] }));
   };
@@ -1148,6 +1188,8 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
         updateWorkflow,
         updateWorkspaceImages,
         updatePageHero,
+        updateCtaSection,
+        updateHeroDescription,
         addProject,
         updateProject,
         deleteProject,

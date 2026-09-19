@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRightIcon, PhoneIcon } from 'lucide-react';
-import { company } from '../data/site';
 import defaultCtaImage from '../data/5.png';
+import { useCMS } from '../context/CMSContext';
 
 export type CTASectionProps = {
   title?: string;
@@ -21,6 +21,7 @@ export function CTASection({
   buttonText = "Start a project",
   buttonTo = "/start-project",
 }: CTASectionProps) {
+  const { cms } = useCMS();
   return (
     <section className="bg-white px-6 py-20">
       <div className="mx-auto max-w-7xl overflow-hidden rounded-3xl bg-forest">
@@ -41,13 +42,13 @@ export function CTASection({
                 <ArrowRightIcon className="h-4 w-4" aria-hidden="true" />
               </Link>
               <a
-                href={`tel:${company.phone.replace(/[^+\d]/g, '')}`}
+                href={`tel:${cms.company.phone.replace(/[^+\d]/g, '')}`}
                 className="inline-flex items-center gap-3 text-sm text-cream/80 transition-colors hover:text-lime"
               >
                 <span className="grid h-10 w-10 place-items-center rounded-full border border-white/20">
                   <PhoneIcon className="h-4 w-4" aria-hidden="true" />
                 </span>
-                {company.phone}
+                {cms.company.phone}
               </a>
             </div>
           </div>

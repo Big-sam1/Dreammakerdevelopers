@@ -4,11 +4,10 @@ import { ArrowRightIcon, StarIcon } from 'lucide-react';
 
 import { useCMS } from '../../context/CMSContext';
 import { TypewriterText } from '../TypewriterText';
-import heroImage from '../../data/hero.png';
 
 export function Hero() {
   const { cms } = useCMS();
-  const backgroundImage = heroImage;
+  const backgroundImage = cms.heroBackgroundImage;
   return (
     <section className="relative overflow-hidden bg-forest">
       <div
@@ -32,9 +31,7 @@ export function Hero() {
           </h1>
 
           <p className="mt-5 max-w-lg text-base leading-relaxed text-cream/75">
-            Dream Maker Developers is a technology and innovation company building reliable,
-            scalable, user-centered software, apps, AI, and brands for businesses and
-            communities.
+            {cms.heroDescription}
           </p>
 
           <div className="mt-9 flex flex-wrap gap-3">

@@ -6,7 +6,6 @@ import { ServiceIcon } from '../components/ServiceIcon';
 import { CTASection } from '../components/CTASection';
 import { useCMS } from '../context/CMSContext';
 import engagementModelsImage from '../data/9.png';
-import servicesCtaImage from '../data/10.png';
 
 export function Services() {
   const { cms } = useCMS();
@@ -134,12 +133,7 @@ export function Services() {
       </section>
 
       {/* Page-specific CTA container with custom image for Services page */}
-      <CTASection
-        title="Ready to discuss your project scope?"
-        description="Whether you need a dedicated development squad, a fixed-milestone digital build, or high-level technical advisory, our engineering leads are ready."
-        image={servicesCtaImage}
-        imageAlt="Dream Maker Developers digital software development dashboard"
-      />
+      <CTASection {...cms.ctaSections.services} />
     </>);
 
 }

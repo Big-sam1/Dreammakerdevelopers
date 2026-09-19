@@ -50,7 +50,7 @@ import {
   TeamMemberItem,
   BranchLocation,
 } from '../../context/CMSContext';
-import { makeCircularFavicon, saveCmsStateToSupabase, uploadImageToSupabase } from '../../lib/supabase';
+import { makeCircularFavicon, uploadImageToSupabase } from '../../lib/supabase';
 import { BackToTop } from '../../components/BackToTop';
 import mapsImage from '../../data/maps.png';
 
@@ -70,6 +70,7 @@ type TabType =
   | 'workspaces'
   | 'company'
   | 'heroes'
+  | 'ctas'
   | 'inbox'
   | 'profile';
 
@@ -141,6 +142,8 @@ export function AdminDashboard() {
     updateWorkflow,
     updateWorkspaceImages,
     updatePageHero,
+    updateCtaSection,
+    updateHeroDescription,
     addProject,
     updateProject,
     deleteProject,
@@ -427,6 +430,7 @@ export function AdminDashboard() {
             { id: 'titles', label: 'Section Titles & Text', icon: Edit3 },
             { id: 'branding', label: 'Logos & Favicon', icon: Palette },
             { id: 'heroes', label: 'Page Heroes & Texts', icon: Layers },
+            { id: 'ctas', label: 'Call to Action Sections', icon: Sparkles },
             { id: 'stats', label: 'Numbers & Counters', icon: BarChart3 },
             { id: 'testimonials', label: 'Client Stories', icon: MessageSquareQuote },
             { id: 'team', label: 'Our Team (10 Staff)', icon: Users },
@@ -598,6 +602,7 @@ export function AdminDashboard() {
             { id: 'titles', label: 'Section Titles & Text', icon: Edit3 },
             { id: 'branding', label: 'Logos & Favicon', icon: Palette },
             { id: 'heroes', label: 'Page Heroes & Texts', icon: Layers },
+            { id: 'ctas', label: 'Call to Action Sections', icon: Sparkles },
             { id: 'stats', label: 'Numbers & Counters', icon: BarChart3 },
             { id: 'testimonials', label: 'Client Stories', icon: MessageSquareQuote },
             { id: 'team', label: 'Our Team (10 Staff)', icon: Users },
@@ -820,6 +825,7 @@ export function AdminDashboard() {
               cms={cms}
               updateCMS={updateCMS}
               updatePageHero={updatePageHero}
+              updateHeroDescription={updateHeroDescription}
               handleFileUpload={handleFileUpload}
               uploadingField={uploadingField}
               showToast={showToast}
@@ -827,6 +833,10 @@ export function AdminDashboard() {
               cardBgClass={cardBgClass}
               inputBgClass={inputBgClass}
             />
+          )}
+
+          {activeTab === 'ctas' && (
+            <CTASectionsEditor cms={cms} updateCtaSection={updateCtaSection} showToast={showToast} isLight={isLight} cardBgClass={cardBgClass} inputBgClass={inputBgClass} />
           )}
 
           {activeTab === 'stats' && (
@@ -1737,7 +1747,6 @@ function AdminProfileSection({
       portalLogo: '/logonav.png',
     }
   );
-  const [isSaving, setIsSaving] = useState(false);
   // Track the first persisted admin profile loaded from MongoDB.
   const initializedRef = React.useRef(false);
 
@@ -1754,19 +1763,15 @@ function AdminProfileSection({
     }
   }, [cms.adminProfile]);
 
-  const persistProfile = async (changes: Partial<typeof profile>) => {
+  const persistProfile = (changes: Partial<typeof profile>) => {
     const nextProfile = { ...cms.adminProfile, ...changes };
     updateAdminProfile(nextProfile);
-    setIsSaving(true);
-    const saved = await saveCmsStateToSupabase({ ...cms, adminProfile: nextProfile });
-    setIsSaving(false);
-    showToast(saved ? 'Profile saved permanently and sidebar updated.' : 'Could not save profile. Please try again.');
-    return saved;
+    showToast('Profile saved and will sync permanently.');
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    await persistProfile(profile);
+    persistProfile(profile);
   };
 
   return (
@@ -1802,7 +1807,7 @@ function AdminProfileSection({
                       setProfile((prev) => ({ ...prev, avatar: url }));
                       // Keep the sidebar and every other admin view in sync
                       // immediately; the CMS provider persists this change.
-                      await persistProfile({ avatar: url });
+                      persistProfile({ avatar: url });
                     })
                   }
                   className="w-full text-xs file:mr-2 file:py-1.5 file:px-2.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-lime file:text-forest file:cursor-pointer"
@@ -1832,7 +1837,7 @@ function AdminProfileSection({
                       // Functional update to avoid stale closure
                       setProfile((prev) => ({ ...prev, portalLogo: url }));
                       // Push only the changed field so the sidebar portal logo updates immediately
-                      await persistProfile({ portalLogo: url });
+                      persistProfile({ portalLogo: url });
                     })
                   }
                   className="w-full text-xs file:mr-2 file:py-1.5 file:px-2.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-lime file:text-forest file:cursor-pointer"
@@ -1882,7 +1887,7 @@ function AdminProfileSection({
         type="submit"
         className="px-6 py-3 rounded-xl bg-lime hover:bg-lime/90 text-forest font-semibold text-sm transition-all shadow-md cursor-pointer"
       >
-        {isSaving ? 'Saving…' : 'Save Profile Permanently'}
+        Save Profile Permanently
       </button>
     </form>
   );
@@ -2287,6 +2292,7 @@ function PageHeroesSection({
   cms,
   updateCMS,
   updatePageHero,
+  updateHeroDescription,
   handleFileUpload,
   uploadingField,
   showToast,
@@ -2297,6 +2303,7 @@ function PageHeroesSection({
   cms: ReturnType<typeof useCMS>['cms'];
   updateCMS: ReturnType<typeof useCMS>['updateCMS'];
   updatePageHero: ReturnType<typeof useCMS>['updatePageHero'];
+  updateHeroDescription: ReturnType<typeof useCMS>['updateHeroDescription'];
   handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>, f: string, cb: (url: string) => void) => void;
   uploadingField: string | null;
   showToast: (m: string) => void;
@@ -2308,6 +2315,7 @@ function PageHeroesSection({
   const [heroes, setHeroes] = useState(cms.pageHeroes || {});
   const [heroPhrases, setHeroPhrases] = useState(cms.heroPhrases || []);
   const [homeBackgroundImage, setHomeBackgroundImage] = useState(cms.heroBackgroundImage || '');
+  const [heroDescription, setHeroDescription] = useState(cms.heroDescription || '');
 
   useEffect(() => {
     if (cms.pageHeroes) {
@@ -2315,7 +2323,8 @@ function PageHeroesSection({
     }
     setHeroPhrases(cms.heroPhrases || []);
     setHomeBackgroundImage(cms.heroBackgroundImage || '');
-  }, [cms.pageHeroes, cms.heroPhrases, cms.heroBackgroundImage]);
+    setHeroDescription(cms.heroDescription || '');
+  }, [cms.pageHeroes, cms.heroPhrases, cms.heroBackgroundImage, cms.heroDescription]);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -2329,6 +2338,7 @@ function PageHeroesSection({
       heroPhrases: heroPhrases.map((phrase) => phrase.trim()).filter(Boolean).slice(0, 3),
       heroBackgroundImage: homeBackgroundImage.trim() || cms.heroBackgroundImage,
     }));
+    updateHeroDescription(heroDescription.trim());
     showToast('Hero text saved. It will sync permanently to every device.');
   };
 
@@ -2374,6 +2384,11 @@ function PageHeroesSection({
             className={`w-full px-3 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
           />
         ))}
+      </div>
+
+      <div className={`border rounded-2xl p-5 space-y-3 ${cardBgClass}`}>
+        <h2 className="text-sm font-bold">Home hero description</h2>
+        <textarea rows={3} value={heroDescription} onChange={(e) => setHeroDescription(e.target.value)} className={`w-full px-3 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`} />
       </div>
 
       <div className={`border rounded-2xl p-5 space-y-3 ${cardBgClass}`}>
@@ -2645,6 +2660,41 @@ function PageHeroesSection({
 /* =========================================================================
    9. STATS & COUNTERS SECTION
    ========================================================================= */
+function CTASectionsEditor({ cms, updateCtaSection, showToast, isLight, cardBgClass, inputBgClass }: {
+  cms: ReturnType<typeof useCMS>['cms'];
+  updateCtaSection: ReturnType<typeof useCMS>['updateCtaSection'];
+  showToast: (message: string) => void;
+  isLight: boolean;
+  cardBgClass: string;
+  inputBgClass: string;
+}) {
+  const [sections, setSections] = useState(cms.ctaSections);
+  useEffect(() => setSections(cms.ctaSections), [cms.ctaSections]);
+  const labels: Record<keyof typeof sections, string> = { home: 'Home', about: 'About', services: 'Services', projects: 'Projects', startProject: 'Start a Project', news: 'News' };
+  const update = (key: keyof typeof sections, field: keyof typeof sections[typeof key], value: string) => {
+    setSections((current) => ({ ...current, [key]: { ...current[key], [field]: value } }));
+  };
+  const save = (event: React.FormEvent) => {
+    event.preventDefault();
+    (Object.keys(sections) as Array<keyof typeof sections>).forEach((key) => updateCtaSection(key, sections[key]));
+    showToast('CTA sections saved and syncing permanently.');
+  };
+  return <form onSubmit={save} className="space-y-6">
+    <div><h1 className="text-2xl font-bold">Call to Action Sections</h1><p className={`text-xs ${isLight ? 'text-gray-500' : 'text-cream/60'}`}>Edit the closing CTA on each public page.</p></div>
+    {(Object.keys(sections) as Array<keyof typeof sections>).map((key) => {
+      const item = sections[key];
+      return <div key={key} className={`border rounded-2xl p-5 space-y-3 ${cardBgClass}`}>
+        <h2 className="text-sm font-bold">{labels[key]} CTA</h2>
+        <input value={item.title} onChange={(e) => update(key, 'title', e.target.value)} placeholder="Title" className={`w-full px-3 py-2 rounded-xl text-xs ${inputBgClass}`} />
+        <textarea rows={2} value={item.description} onChange={(e) => update(key, 'description', e.target.value)} placeholder="Description" className={`w-full px-3 py-2 rounded-xl text-xs ${inputBgClass}`} />
+        <div className="grid gap-3 sm:grid-cols-2"><input value={item.image} onChange={(e) => update(key, 'image', e.target.value)} placeholder="Image URL" className={`px-3 py-2 rounded-xl text-xs ${inputBgClass}`} /><input value={item.imageAlt} onChange={(e) => update(key, 'imageAlt', e.target.value)} placeholder="Image alt text" className={`px-3 py-2 rounded-xl text-xs ${inputBgClass}`} /></div>
+        <div className="grid gap-3 sm:grid-cols-2"><input value={item.buttonText} onChange={(e) => update(key, 'buttonText', e.target.value)} placeholder="Button text" className={`px-3 py-2 rounded-xl text-xs ${inputBgClass}`} /><input value={item.buttonTo} onChange={(e) => update(key, 'buttonTo', e.target.value)} placeholder="Button path" className={`px-3 py-2 rounded-xl text-xs ${inputBgClass}`} /></div>
+      </div>;
+    })}
+    <button className="px-6 py-3 rounded-xl bg-lime text-forest font-semibold text-sm">Save CTA Sections</button>
+  </form>;
+}
+
 function StatsSection({
   cms,
   updateStats,

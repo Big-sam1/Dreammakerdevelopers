@@ -5,8 +5,10 @@ import { AboutPreview } from '../components/home/AboutPreview';
 import { ProcessSection } from '../components/home/ProcessSection';
 import { Testimonials } from '../components/home/Testimonials';
 import { CTASection } from '../components/CTASection';
+import { useCMS } from '../context/CMSContext';
 
 export function Home() {
+  const { cms } = useCMS();
   return (
     <>
       <Hero />
@@ -14,7 +16,7 @@ export function Home() {
       <AboutPreview />
       <ProcessSection />
       <Testimonials />
-      <CTASection />
+      <CTASection {...cms.ctaSections.home} />
     </>);
 
 }
