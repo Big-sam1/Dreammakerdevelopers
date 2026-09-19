@@ -3767,10 +3767,16 @@ function ProjectsSection({
     tags: ['React', 'TypeScript'],
   });
 
-  const handleCreate = (e: React.FormEvent) => {
+  const persistProjects = async (nextProjects: ProjectItem[]) => {
+    const saved = await saveCmsStateToSupabase({ ...cms, projects: nextProjects });
+    if (!saved) showToast('Project change was not saved to Supabase. Please try again.');
+    return saved;
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProj.title) return;
-    addProject({
+    const project: ProjectItem = {
       id: `proj-${Date.now()}`,
       title: newProj.title,
       category: newProj.category as any || 'software',
@@ -3780,7 +3786,9 @@ function ProjectsSection({
       image: newProj.image || '/5bfe9030-9ed1-4761-a332-2c3df8f3bfbb.jpg',
       tags: newProj.tags || ['Next.js'],
       link: newProj.link || '',
-    });
+    };
+    if (!await persistProjects([project, ...projects])) return;
+    addProject(project);
     setShowAdd(false);
     showToast(`Project "${newProj.title}" added to showcase!`);
   };
@@ -3901,9 +3909,11 @@ function ProjectsSection({
                   accept="image/*"
                   className="hidden"
                   onChange={(e) =>
-                    handleFileUpload(e, proj.id, (url) => {
-                      updateProject({ ...proj, image: url });
-                      showToast(`Image updated for ${proj.title}`);
+                    handleFileUpload(e, proj.id, async (url) => {
+                      const updated = { ...proj, image: url };
+                      if (!await persistProjects(projects.map((item) => item.id === proj.id ? updated : item))) return;
+                      updateProject(updated);
+                      showToast(`Image permanently saved for ${proj.title}`);
                     })
                   }
                 />
@@ -3912,8 +3922,13 @@ function ProjectsSection({
               <button
                 onClick={() => {
                   if (window.confirm(`Delete ${proj.title}?`)) {
-                    deleteProject(proj.id);
-                    showToast('Project deleted.');
+                    const nextProjects = projects.filter((item) => item.id !== proj.id);
+                    void persistProjects(nextProjects).then((saved) => {
+                      if (saved) {
+                        deleteProject(proj.id);
+                        showToast('Project deleted.');
+                      }
+                    });
                   }
                 }}
                 className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg"
@@ -3927,7 +3942,7 @@ function ProjectsSection({
 
       {editing && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/55 p-4">
-          <form onSubmit={(e) => { e.preventDefault(); updateProject(editing); setEditing(null); showToast('Project updated and saved.'); }} className={`w-full max-w-2xl rounded-2xl border p-6 space-y-4 shadow-2xl ${cardBgClass}`}>
+          <form onSubmit={(e) => { e.preventDefault(); void persistProjects(projects.map((item) => item.id === editing.id ? editing : item)).then((saved) => { if (saved) { updateProject(editing); setEditing(null); showToast('Project permanently saved.'); } }); }} className={`w-full max-w-2xl rounded-2xl border p-6 space-y-4 shadow-2xl ${cardBgClass}`}>
             <div className="flex items-center justify-between"><h2 className="font-bold">Edit project</h2><button type="button" onClick={() => setEditing(null)}><X className="w-5 h-5" /></button></div>
             <input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} className={`w-full rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Title" />
             <div className="grid gap-3 sm:grid-cols-2"><input value={editing.categoryLabel} onChange={(e) => setEditing({ ...editing, categoryLabel: e.target.value })} className={`rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Category" /><input value={editing.impact} onChange={(e) => setEditing({ ...editing, impact: e.target.value })} className={`rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Impact" /></div>
@@ -3992,10 +4007,16 @@ function NewsSection({
     image: '/5bfe9030-9ed1-4761-a332-2c3df8f3bfbb.jpg',
   });
 
-  const handleCreate = (e: React.FormEvent) => {
+  const persistNews = async (nextArticles: NewsItem[]) => {
+    const saved = await saveCmsStateToSupabase({ ...cms, newsArticles: nextArticles });
+    if (!saved) showToast('Article change was not saved to Supabase. Please try again.');
+    return saved;
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newArticle.title) return;
-    addNewsArticle({
+    const article: NewsItem = {
       id: `art-${Date.now()}`,
       title: newArticle.title,
       category: newArticle.category || 'EDITORIAL',
@@ -4007,7 +4028,9 @@ function NewsSection({
       excerpt: newArticle.excerpt || '',
       content: newArticle.content?.length ? newArticle.content : ['Full editorial story.'],
       image: newArticle.image || '/5bfe9030-9ed1-4761-a332-2c3df8f3bfbb.jpg',
-    });
+    };
+    if (!await persistNews([article, ...cms.newsArticles])) return;
+    addNewsArticle(article);
     setShowAdd(false);
     showToast(`Article "${newArticle.title}" published!`);
   };
@@ -4144,9 +4167,11 @@ function NewsSection({
                   accept="image/*"
                   className="hidden"
                   onChange={(e) =>
-                    handleFileUpload(e, article.id, (url) => {
-                      updateNewsArticle({ ...article, image: url });
-                      showToast('Article image updated!');
+                    handleFileUpload(e, article.id, async (url) => {
+                      const updated = { ...article, image: url };
+                      if (!await persistNews(cms.newsArticles.map((item) => item.id === article.id ? updated : item))) return;
+                      updateNewsArticle(updated);
+                      showToast('Article image permanently saved!');
                     })
                   }
                 />
@@ -4155,8 +4180,13 @@ function NewsSection({
               <button
                 onClick={() => {
                   if (window.confirm(`Delete ${article.title}?`)) {
-                    deleteNewsArticle(article.id);
-                    showToast('Article deleted.');
+                    const nextArticles = cms.newsArticles.filter((item) => item.id !== article.id);
+                    void persistNews(nextArticles).then((saved) => {
+                      if (saved) {
+                        deleteNewsArticle(article.id);
+                        showToast('Article deleted.');
+                      }
+                    });
                   }
                 }}
                 className="p-2 text-red-500 hover:bg-red-500/10 rounded-lg"
@@ -4170,7 +4200,7 @@ function NewsSection({
 
       {editing && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/55 p-4">
-          <form onSubmit={(e) => { e.preventDefault(); updateNewsArticle(editing); setEditing(null); showToast('Article updated and saved.'); }} className={`w-full max-w-2xl rounded-2xl border p-6 space-y-4 shadow-2xl ${cardBgClass}`}>
+          <form onSubmit={(e) => { e.preventDefault(); void persistNews(cms.newsArticles.map((item) => item.id === editing.id ? editing : item)).then((saved) => { if (saved) { updateNewsArticle(editing); setEditing(null); showToast('Article permanently saved.'); } }); }} className={`w-full max-w-2xl rounded-2xl border p-6 space-y-4 shadow-2xl ${cardBgClass}`}>
             <div className="flex items-center justify-between"><h2 className="font-bold">Edit article</h2><button type="button" onClick={() => setEditing(null)}><X className="w-5 h-5" /></button></div>
             <input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} className={`w-full rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Headline" />
             <div className="grid gap-3 sm:grid-cols-2"><input value={editing.category} onChange={(e) => setEditing({ ...editing, category: e.target.value })} className={`rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Category" /><input value={editing.author} onChange={(e) => setEditing({ ...editing, author: e.target.value })} className={`rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Author" /></div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { TargetIcon, EyeIcon } from 'lucide-react';
 import { PageHero } from '../components/PageHero';
 import { Eyebrow } from '../components/Eyebrow';
@@ -26,6 +26,8 @@ export function About() {
     '/logonav.png',
   ];
   const workflow = cms.workflow;
+  const [videoFailed, setVideoFailed] = useState(false);
+  useEffect(() => setVideoFailed(false), [workflow.videoUrl]);
 
   return (
     <>
@@ -192,7 +194,12 @@ export function About() {
 
                 {/* Video Frame */}
                 <div className="mt-5 relative overflow-hidden rounded-2xl bg-forest-deep shadow-md">
-                  <video
+                  {videoFailed ? (
+                    <div className="relative h-56 w-full sm:h-64">
+                      <img src={workflow.poster} alt="Workflow video poster" className="h-full w-full object-cover" />
+                      <p className="absolute inset-x-4 bottom-4 rounded-lg bg-black/70 px-3 py-2 text-center text-xs text-white">Video unavailable. Upload a new MP4/WebM in Admin → Workflow Video.</p>
+                    </div>
+                  ) : <video
                     controls
                     autoPlay
                     loop
@@ -201,13 +208,15 @@ export function About() {
                     className="h-56 sm:h-64 w-full object-cover"
                     poster={workflow.poster}
                     key={workflow.videoUrl}
+                    preload="metadata"
+                    onError={() => setVideoFailed(true)}
                   >
                     <source
                       src={workflow.videoUrl}
                       type={workflow.videoUrl.toLowerCase().includes('.webm') ? 'video/webm' : 'video/mp4'}
                     />
                     Your browser does not support the video tag.
-                  </video>
+                  </video>}
                 </div>
 
                 {/* Text about the video */}
