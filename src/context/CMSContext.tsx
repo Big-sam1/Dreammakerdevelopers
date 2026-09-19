@@ -841,6 +841,10 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
   // older failed request can never overwrite a newer admin edit.
   const latestCmsRef = React.useRef<CMSState>(cms);
   const retryTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Every CMS mutation is a full-state write. Serialize those writes so a
+  // slower request containing older team/news/media data can never finish
+  // after a newer request and restore stale content in Supabase.
+  const saveQueueRef = React.useRef<Promise<void>>(Promise.resolve());
 
   // Tracks the last Supabase updated_at we received — used to skip
   // unnecessary re-renders when nothing actually changed on the server.
@@ -929,36 +933,33 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
     if (!isHydrated) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
 
-    const persistLatestState = async (attempt = 0) => {
-      const saved = await saveCmsStateToSupabase(latestCmsRef.current);
-      if (saved) {
-        setSyncStatus('saved');
-        return;
+    const persistLatestState = async () => {
+      for (let attempt = 0; attempt <= 3; attempt += 1) {
+        const saved = await saveCmsStateToSupabase(latestCmsRef.current);
+        if (saved) {
+          setSyncStatus('saved');
+          return;
+        }
+        if (attempt < 3) {
+          await new Promise<void>((resolve) => {
+            retryTimerRef.current = setTimeout(resolve, 2_000 * (attempt + 1));
+          });
+        }
       }
-      if (attempt >= 3) {
-        setSyncStatus('error');
-        return;
-      }
-
-      // Keep edits durable when a mobile connection or a serverless function
-      // is briefly unavailable. Each retry reads the newest state from the
-      // ref, rather than sending an old snapshot over a newer admin change.
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
-      retryTimerRef.current = setTimeout(() => {
-        void persistLatestState(attempt + 1);
-      }, 2_000 * (attempt + 1));
+      setSyncStatus('error');
     };
 
     saveTimerRef.current = setTimeout(() => {
       setSyncStatus('saving');
-      void persistLatestState();
+      saveQueueRef.current = saveQueueRef.current
+        .catch(() => {})
+        .then(persistLatestState);
     // Persist on the next event-loop turn. This lets React commit the new
     // state first, while ensuring an admin can safely navigate or refresh
     // straight after clicking Save or uploading media.
     }, 0);
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
     };
   }, [cms, isHydrated]);
 

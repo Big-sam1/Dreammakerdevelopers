@@ -50,7 +50,7 @@ import {
   TeamMemberItem,
   BranchLocation,
 } from '../../context/CMSContext';
-import { makeCircularFavicon, uploadImageToSupabase } from '../../lib/supabase';
+import { makeCircularFavicon, saveCmsStateToSupabase, uploadImageToSupabase } from '../../lib/supabase';
 import { BackToTop } from '../../components/BackToTop';
 import mapsImage from '../../data/maps.png';
 
