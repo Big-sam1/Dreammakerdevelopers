@@ -109,76 +109,34 @@ export async function loginWithSupabase(
 // ─── FILE UPLOADS -> SUPABASE STORAGE (via server with client fallback) ───────
 
 /**
- * Upload any image/video through the server to Supabase Storage.
- * If server is unreachable (e.g. static Vercel), uploads directly to Supabase
- * or generates an optimized Base64 data URL so it displays 100% reliably.
+ * Upload any image/video through an authenticated, server-issued Supabase
+ * signed URL.  Sending files to Storage directly avoids serverless request
+ * body limits and makes the returned URL permanent, public CMS content.
  */
 export async function uploadImageToSupabase(file: File): Promise<string> {
   const token = localStorage.getItem('dmd_admin_token');
 
-  // Videos and other larger files upload directly to Supabase through a
-  // server-issued signed URL, avoiding Vercel function payload limits.
-  if (file.size > 3_000_000) {
+  try {
     const signedRes = await fetch('/api/upload-url', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: JSON.stringify({ fileName: file.name }),
+      body: JSON.stringify({ fileName: file.name, contentType: file.type || 'application/octet-stream' }),
     });
     const signed = await signedRes.json().catch(() => null);
     if (!signedRes.ok || !signed?.uploadUrl || !signed?.publicUrl) {
-      throw new Error('Could not prepare permanent Supabase video upload. Please sign in again and retry.');
+      throw new Error(signed?.error || 'Could not prepare a permanent upload. Please sign in again and retry.');
     }
     const directUpload = await fetch(signed.uploadUrl, {
       method: 'PUT',
       headers: { 'Content-Type': file.type || 'application/octet-stream' },
       body: file,
     });
-    if (!directUpload.ok) throw new Error('Supabase did not accept this video. Please retry.');
+    if (!directUpload.ok) throw new Error('Supabase did not accept the file. Please retry.');
     return signed.publicUrl as string;
+  } catch (error) {
+    if (error instanceof Error) throw error;
+    throw new Error('The file could not be uploaded. Please check your connection and retry.');
   }
-
-  // 1. Try server upload API first
-  try {
-    const res = await fetch('/api/uploads', {
-      method: 'POST',
-      headers: {
-        'Content-Type': file.type || 'application/octet-stream',
-        'X-File-Name': encodeURIComponent(file.name),
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: file,
-    });
-    if (res.ok) {
-      const result = await res.json().catch(() => null);
-      if (typeof result?.url === 'string' && result.url.startsWith('https://')) {
-        return result.url;
-      }
-    }
-  } catch {
-    // Proceed to direct upload
-  }
-
-  // 2. Try direct Supabase Storage upload
-  if (SUPABASE_URL && SUPABASE_ANON_KEY) try {
-    const safeName = `uploads/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-    const directRes = await fetch(`${SUPABASE_URL}/storage/v1/object/dmd-assets/${safeName}`, {
-      method: 'POST',
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': file.type || 'application/octet-stream',
-      },
-      body: file,
-    });
-    if (directRes.ok) {
-      return `${SUPABASE_URL}/storage/v1/object/public/dmd-assets/${safeName}`;
-    }
-  } catch {
-    // Proceed to data URL
-  }
-
-  // 3. Resilient Base64 Data URL fallback — image will display immediately on the UI
-  throw new Error('Image could not be stored permanently in Supabase. Please sign in again and retry.');
 }
 
 // ─── PUBLIC FORM SUBMISSIONS ──────────────────────────────────────────────────

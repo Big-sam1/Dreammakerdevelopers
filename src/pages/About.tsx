@@ -205,7 +205,7 @@ export function About() {
                   >
                     <source
                       src={workflow.videoUrl}
-                      type="video/mp4"
+                      type={workflow.videoUrl.toLowerCase().includes('.webm') ? 'video/webm' : 'video/mp4'}
                     />
                     Your browser does not support the video tag.
                   </video>

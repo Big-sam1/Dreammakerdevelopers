@@ -209,7 +209,7 @@ export function AdminDashboard() {
     navigate('/admin/login');
   };
 
-  // Image upload helper
+  // Permanent media upload helper
   const handleFileUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
     fieldName: string,
@@ -223,10 +223,10 @@ export function AdminDashboard() {
         fieldName === 'favicon' ? await makeCircularFavicon(file) : file
       );
       onUploaded(publicUrl);
-      showToast('Image uploaded and synced live!');
+      showToast(`${file.type.startsWith('video/') ? 'Video' : 'Image'} uploaded and synced live!`);
     } catch (err) {
       console.error('Failed to upload image:', err);
-      showToast('Upload failed, please check network.');
+      showToast(err instanceof Error ? err.message : 'Upload failed. Please check your connection.');
     } finally {
       setUploadingField(null);
     }
@@ -3525,8 +3525,10 @@ function WorkflowSection({
               accept="video/mp4,video/webm"
               disabled={uploadingField === 'workflowVideo'}
               onChange={(e) => handleFileUpload(e, 'workflowVideo', (url) => {
-                setWorkflow((prev) => ({ ...prev, videoUrl: url }));
-                showToast('Video uploaded. Click Save Workflow Video to publish it.');
+                const nextWorkflow = { ...workflow, videoUrl: url };
+                setWorkflow(nextWorkflow);
+                updateWorkflow(nextWorkflow);
+                showToast('Video uploaded and published to the About page.');
               })}
               className="mt-1 w-full text-xs file:mr-2 file:py-1.5 file:px-2.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-lime file:text-forest"
             />
@@ -3548,7 +3550,11 @@ function WorkflowSection({
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => handleFileUpload(e, 'wfPoster', (url) => setWorkflow((prev) => ({ ...prev, poster: url })))}
+              onChange={(e) => handleFileUpload(e, 'wfPoster', (url) => {
+                const nextWorkflow = { ...workflow, poster: url };
+                setWorkflow(nextWorkflow);
+                updateWorkflow(nextWorkflow);
+              })}
               className="w-full text-xs file:mr-2 file:py-1.5 file:px-2.5 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-lime file:text-forest"
             />
           </div>
