@@ -924,7 +924,10 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
 
     saveTimerRef.current = setTimeout(() => {
       void persistLatestState();
-    }, 1500);
+    // Persist on the next event-loop turn. This lets React commit the new
+    // state first, while ensuring an admin can safely navigate or refresh
+    // straight after clicking Save or uploading media.
+    }, 0);
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
