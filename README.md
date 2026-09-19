@@ -23,12 +23,17 @@ Copy `.env.example` to `.env` and fill in your Supabase credentials and admin lo
 ```env
 VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 VITE_SUPABASE_ANON_KEY=sb_publishable_YOUR_KEY
-VITE_SUPABASE_SECRET_KEY=sb_secret_YOUR_KEY
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_YOUR_KEY
 
 ADMIN_EMAIL=admin@dreammakerdevelopers.com
 ADMIN_PASSWORD=YourSecurePassword
 PORT=4000
 ```
+
+`SUPABASE_SERVICE_ROLE_KEY` is server-only: never prefix it with `VITE_` or
+expose it in browser code. Set the same key, plus `ADMIN_EMAIL`,
+`ADMIN_PASSWORD`, and `ADMIN_SESSION_SECRET`, in your Vercel project
+environment variables. CMS saves require those server-side variables.
 
 ### 3. Build & Run Production Server
 ```bash

@@ -19,10 +19,13 @@ import { createHmac, randomBytes, scryptSync, timingSafeEqual } from 'node:crypt
 
 const port          = Number(process.env.PORT || 4000);
 const SUPABASE_URL  = process.env.VITE_SUPABASE_URL;
-const SERVICE_KEY   = process.env.VITE_SUPABASE_SECRET_KEY;
+// Service-role credentials must stay server-only. Keep the legacy variable as
+// a temporary fallback for existing local installations, but use the same
+// canonical name as the Vercel API function.
+const SERVICE_KEY   = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SECRET_KEY;
 
 if (!SUPABASE_URL || !SERVICE_KEY) {
-  console.error('[DMD] ERROR: VITE_SUPABASE_URL and VITE_SUPABASE_SECRET_KEY must be set in .env');
+  console.error('[DMD] ERROR: VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env');
   process.exit(1);
 }
 
