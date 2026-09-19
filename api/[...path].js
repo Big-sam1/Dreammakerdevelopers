@@ -114,6 +114,7 @@ export default async function handler(req, res) {
   // retain the normal local-development URL parsing.
   const requestUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
   const path = requestUrl.searchParams.get('path')
+    || requestUrl.searchParams.get('...path')
     || requestUrl.pathname.replace(/^\/api\//, '').replace(/^\//, '');
 
   try {
