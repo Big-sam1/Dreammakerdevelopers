@@ -27,7 +27,8 @@ export function About() {
   ];
   const workflow = cms.workflow;
   const [videoFailed, setVideoFailed] = useState(false);
-  useEffect(() => setVideoFailed(false), [workflow.videoUrl]);
+  // Reset failed state whenever the URL changes (new video uploaded)
+  useEffect(() => { setVideoFailed(false); }, [workflow.videoUrl]);
 
   return (
     <>
@@ -197,21 +198,29 @@ export function About() {
                   {workflow.videoUrl && !videoFailed ? (
                     <video
                       controls
-                      autoPlay
                       loop
                       muted
                       playsInline
+                      crossOrigin="anonymous"
                       className="h-56 sm:h-64 w-full object-cover"
                       key={workflow.videoUrl}
+                      src={workflow.videoUrl}
                       preload="metadata"
                       onError={() => setVideoFailed(true)}
-                    >
-                      <source
-                        src={workflow.videoUrl}
-                        type={workflow.videoUrl.toLowerCase().includes('.webm') ? 'video/webm' : 'video/mp4'}
-                      />
-                      Your browser does not support the video tag.
-                    </video>
+                    />
+                  ) : workflow.videoUrl && videoFailed ? (
+                    <div className="relative h-56 sm:h-64 w-full flex flex-col items-center justify-center bg-forest p-6 text-center">
+                      <div className="w-12 h-12 rounded-2xl bg-lime/10 border border-lime/30 flex items-center justify-center mb-3">
+                        <Video className="w-6 h-6 text-lime" />
+                      </div>
+                      <p className="text-sm font-semibold text-cream">Engineering Sprint Walkthrough</p>
+                      <button
+                        onClick={() => setVideoFailed(false)}
+                        className="mt-3 px-4 py-1.5 rounded-full bg-lime/20 border border-lime/40 text-lime text-xs font-semibold hover:bg-lime/30 transition-colors"
+                      >
+                        Retry
+                      </button>
+                    </div>
                   ) : (
                     <div className="relative h-56 sm:h-64 w-full flex flex-col items-center justify-center bg-forest p-6 text-center">
                       <div className="w-12 h-12 rounded-2xl bg-lime/10 border border-lime/30 flex items-center justify-center mb-3">
