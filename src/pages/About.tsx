@@ -32,50 +32,44 @@ export function About() {
   // Reset failed state whenever the URL changes (new video uploaded)
   useEffect(() => { setVideoFailed(false); }, [workflow.videoUrl]);
 
-  // Scroll and cursor-driven horizontal movement for partner images (right-to-left effect)
-  const partnersSectionRef = useRef<HTMLElement>(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const [cursorX, setCursorX] = useState(0);
+  // One partner moves at a time, one by one another, 4s duration, fast-to-slow motion
+  const [activePartnerIdx, setActivePartnerIdx] = useState(0);
+  const lastScrollY = useRef(0);
+  const scrollDeltaAccumulator = useRef(0);
 
+  // 4-second sequence: moves one partner at a time sequentially
   useEffect(() => {
-    let ticking = false;
+    if (uniquePartners.length === 0) return;
+    const timer = setInterval(() => {
+      setActivePartnerIdx((prev) => (prev + 1) % uniquePartners.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [uniquePartners.length]);
 
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          if (partnersSectionRef.current) {
-            const rect = partnersSectionRef.current.getBoundingClientRect();
-            const windowHeight = window.innerHeight;
-            const totalDistance = windowHeight + rect.height;
-            const currentPosition = windowHeight - rect.top;
-            const progress = Math.max(-0.2, Math.min(1.2, currentPosition / totalDistance));
-            setScrollProgress(progress);
-          }
-          ticking = false;
-        });
-        ticking = true;
+  // As cursor/user scrolls down, trigger/advance the next partner across the screen
+  useEffect(() => {
+    if (uniquePartners.length === 0) return;
+    const onScroll = () => {
+      const currentY = window.scrollY;
+      const delta = currentY - lastScrollY.current;
+      lastScrollY.current = currentY;
+
+      if (delta > 20) {
+        scrollDeltaAccumulator.current += delta;
+        if (scrollDeltaAccumulator.current > 120) {
+          scrollDeltaAccumulator.current = 0;
+          setActivePartnerIdx((prev) => (prev + 1) % uniquePartners.length);
+        }
+      } else if (delta < -20) {
+        scrollDeltaAccumulator.current = 0;
       }
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [uniquePartners.length]);
 
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const handlePartnerMouseMove = (e: React.MouseEvent<HTMLElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const relX = (e.clientX - rect.left) / rect.width;
-    setCursorX((relX - 0.5) * -100);
-  };
-
-  const handlePartnerMouseLeave = () => {
-    setCursorX(0);
-  };
-
-  // As the user scrolls down, scrollProgress increases from 0 to 1,
-  // continuously shifting the partners row from right (+180px) to left (-380px)
-  const partnerShiftX = Math.round(180 - (scrollProgress * 560) + cursorX);
+  const currentPartnerImg = uniquePartners[activePartnerIdx] || uniquePartners[0];
 
   return (
     <>
@@ -235,33 +229,26 @@ export function About() {
         </div>
       </section>
 
-      {/* Sliding partner images — moves from right side to left side as user scrolls down or moves cursor */}
-      <section
-        ref={partnersSectionRef}
-        onMouseMove={handlePartnerMouseMove}
-        onMouseLeave={handlePartnerMouseLeave}
-        className="border-y border-white/10 bg-forest py-8 overflow-hidden select-none"
-      >
-        <div className="relative w-full overflow-hidden">
-          <div
-            className="flex items-center gap-8 transition-transform duration-150 ease-out will-change-transform"
-            style={{
-              transform: `translate3d(${partnerShiftX}px, 0, 0)`,
-            }}
-          >
-            {uniquePartners.map((imgSrc, idx) => (
-              <div
-                key={`${imgSrc}-${idx}`}
-                className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-full border-2 border-lime/40 bg-white/10 p-1 shadow-md transition-all hover:scale-110 hover:border-lime"
-              >
+      {/* Sliding partner images — one partner moves at a time, starting from right at 0 margin to left, fast-to-slow 4s motion */}
+      <section className="border-y border-white/10 bg-forest py-6 sm:py-8 overflow-hidden relative select-none">
+        <div className="relative w-full h-20 sm:h-24 overflow-hidden flex items-center">
+          {currentPartnerImg && (
+            <div
+              key={activePartnerIdx}
+              className="absolute right-0 flex items-center gap-3.5 animate-partner-single cursor-pointer"
+            >
+              <div className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-full border-2 border-lime/80 bg-white/10 p-1.5 shadow-2xl backdrop-blur-sm transition-all hover:scale-110 hover:border-lime">
                 <img
-                  src={imgSrc}
-                  alt={`Partner ${idx + 1}`}
+                  src={currentPartnerImg}
+                  alt={`Partner ${activePartnerIdx + 1}`}
                   className="h-full w-full rounded-full object-cover"
                 />
               </div>
-            ))}
-          </div>
+              <span className="hidden sm:inline-block px-3 py-1 rounded-full bg-forest-deep/90 border border-lime/40 text-[10px] font-bold text-lime uppercase tracking-widest shadow-md">
+                Partner {activePartnerIdx + 1} / {uniquePartners.length}
+              </span>
+            </div>
+          )}
         </div>
       </section>
 
