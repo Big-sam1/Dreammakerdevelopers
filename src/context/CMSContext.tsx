@@ -34,6 +34,9 @@ export type TeamMemberItem = {
   role: string;
   specialty: string;
   image: string;
+  secondImage?: string;
+  phone?: string;
+  email?: string;
 };
 
 export type ServiceItem = {

@@ -26,6 +26,8 @@ import {
   Activity,
   Layers,
   CheckCircle2,
+  Phone,
+  Mail,
   ChevronLeft,
   ChevronRight,
   Sun,
@@ -3111,6 +3113,9 @@ function TeamSection({
     role: '',
     specialty: '',
     image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+    secondImage: '',
+    phone: '',
+    email: '',
   });
 
   const [editingMemberIdx, setEditingMemberIdx] = useState<number | null>(null);
@@ -3141,6 +3146,9 @@ function TeamSection({
       role: newMember.role.trim() || 'Software Engineer',
       specialty: newMember.specialty.trim() || 'Systems Engineering',
       image: newMember.image.trim() || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+      secondImage: newMember.secondImage?.trim() || '',
+      phone: newMember.phone?.trim() || '',
+      email: newMember.email?.trim() || '',
     };
     if (!await persistTeam([...team, member])) return;
     addTeamMember(member);
@@ -3276,12 +3284,61 @@ function TeamSection({
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-medium block mb-1">Photo Image URL (or use Upload above):</label>
+                    <label className="text-xs font-medium block mb-1">Primary Photo URL:</label>
                     <input
                       type="text"
                       placeholder="https://..."
                       value={newMember.image}
                       onChange={(e) => setNewMember({ ...newMember, image: e.target.value })}
+                      className={`w-full px-3 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
+                    />
+                  </div>
+                </div>
+
+                {/* Second Photo (Hover Expansion) & Contact Links */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-forest/10">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-medium">Second Image (Hover):</label>
+                      <label className="text-[10px] text-lime hover:underline cursor-pointer">
+                        Upload
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) =>
+                            handleFileUpload(e, 'team-new-second', (url) =>
+                              setNewMember((prev) => ({ ...prev, secondImage: url }))
+                            )
+                          }
+                        />
+                      </label>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Hover portrait URL"
+                      value={newMember.secondImage || ''}
+                      onChange={(e) => setNewMember({ ...newMember, secondImage: e.target.value })}
+                      className={`w-full px-3 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium block mb-1">Phone Number (direct call):</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. +250 788 123 456"
+                      value={newMember.phone || ''}
+                      onChange={(e) => setNewMember({ ...newMember, phone: e.target.value })}
+                      className={`w-full px-3 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium block mb-1">Email Address (direct mail):</label>
+                    <input
+                      type="email"
+                      placeholder="e.g. name@dreammakerdevelopers.com"
+                      value={newMember.email || ''}
+                      onChange={(e) => setNewMember({ ...newMember, email: e.target.value })}
                       className={`w-full px-3 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
                     />
                   </div>
@@ -3393,11 +3450,60 @@ function TeamSection({
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-medium block mb-1">Photo Image URL:</label>
+                    <label className="text-xs font-medium block mb-1">Primary Photo URL:</label>
                     <input
                       type="text"
                       value={editFormData.image}
                       onChange={(e) => setEditFormData({ ...editFormData, image: e.target.value })}
+                      className={`w-full px-3 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
+                    />
+                  </div>
+                </div>
+
+                {/* Second Photo (Hover Expansion) & Contact Links */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-forest/10">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-medium">Second Image (Hover):</label>
+                      <label className="text-[10px] text-lime hover:underline cursor-pointer">
+                        Upload
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) =>
+                            handleFileUpload(e, `team-edit-second-${editingMemberIdx}`, (url) =>
+                              setEditFormData((prev) => (prev ? { ...prev, secondImage: url } : prev))
+                            )
+                          }
+                        />
+                      </label>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Hover portrait URL"
+                      value={editFormData.secondImage || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, secondImage: e.target.value })}
+                      className={`w-full px-3 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium block mb-1">Phone Number (direct call):</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. +250 788 123 456"
+                      value={editFormData.phone || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                      className={`w-full px-3 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium block mb-1">Email Address (direct mail):</label>
+                    <input
+                      type="email"
+                      placeholder="e.g. name@dreammakerdevelopers.com"
+                      value={editFormData.email || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
                       className={`w-full px-3 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
                     />
                   </div>
@@ -3499,27 +3605,55 @@ function TeamSection({
                     }`}
                     placeholder="Specialty"
                   />
+                  <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] opacity-80">
+                    {member.secondImage ? (
+                      <span className="px-1.5 py-0.5 rounded bg-lime/20 text-lime font-mono text-[9px] font-bold">2nd Photo ✓</span>
+                    ) : (
+                      <span className="px-1.5 py-0.5 rounded bg-gray-500/20 text-gray-400 font-mono text-[9px]">No 2nd Photo</span>
+                    )}
+                    {member.phone && <span className="flex items-center gap-1 font-mono text-[10px]"><Phone className="w-2.5 h-2.5 text-lime" />{member.phone}</span>}
+                    {member.email && <span className="flex items-center gap-1 font-mono text-[10px] truncate max-w-[130px]"><Mail className="w-2.5 h-2.5 text-lime" />{member.email}</span>}
+                  </div>
                 </div>
               </div>
 
               <div className="pt-2 border-t flex items-center justify-between text-xs">
-                <label className={`cursor-pointer font-semibold hover:underline flex items-center gap-1.5 ${isLight ? 'text-forest' : 'text-lime'}`}>
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>Upload Photo</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) =>
-                      handleFileUpload(e, `team-${actualIdx}`, async (url) => {
-                        const nextTeam = team.map((item, index) => index === actualIdx ? { ...item, image: url } : item);
-                        if (!await persistTeam(nextTeam)) return;
-                        updateTeamMember(actualIdx, { ...member, image: url });
-                        showToast(`Photo permanently saved for ${member.name}`);
-                      })
-                    }
-                  />
-                </label>
+                <div className="flex items-center gap-3">
+                  <label className={`cursor-pointer font-semibold hover:underline flex items-center gap-1 ${isLight ? 'text-forest' : 'text-lime'}`}>
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Photo 1</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) =>
+                        handleFileUpload(e, `team-${actualIdx}`, async (url) => {
+                          const nextTeam = team.map((item, index) => index === actualIdx ? { ...item, image: url } : item);
+                          if (!await persistTeam(nextTeam)) return;
+                          updateTeamMember(actualIdx, { ...member, image: url });
+                          showToast(`Portrait photo permanently saved for ${member.name}`);
+                        })
+                      }
+                    />
+                  </label>
+                  <label className={`cursor-pointer font-semibold hover:underline flex items-center gap-1 text-lime`}>
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Photo 2 (Hover)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) =>
+                        handleFileUpload(e, `team-second-${actualIdx}`, async (url) => {
+                          const nextTeam = team.map((item, index) => index === actualIdx ? { ...item, secondImage: url } : item);
+                          if (!await persistTeam(nextTeam)) return;
+                          updateTeamMember(actualIdx, { ...member, secondImage: url });
+                          showToast(`Hover 2nd photo permanently saved for ${member.name}`);
+                        })
+                      }
+                    />
+                  </label>
+                </div>
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
@@ -4194,6 +4328,15 @@ function ProjectsSection({
 /* =========================================================================
    16. NEWS & ARTICLES SECTION WITH PAGINATION
    ========================================================================= */
+const NEWS_CATEGORIES = [
+  'Engineering',
+  'AI & ML',
+  'Business',
+  'UI/UX Design',
+  'Mobile',
+  'Cloud & DevOps',
+];
+
 function NewsSection({
   cms,
   persistStateDirectly,
@@ -4298,13 +4441,17 @@ function NewsSection({
               onChange={(e) => setNewArticle({ ...newArticle, title: e.target.value })}
               className={`sm:col-span-2 px-3 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
             />
-            <input
-              type="text"
-              placeholder="Category (OPINION / TECH)"
-              value={newArticle.category}
-              onChange={(e) => setNewArticle({ ...newArticle, category: e.target.value.toUpperCase() })}
-              className={`px-3 py-2 rounded-xl text-xs font-mono focus:outline-none ${inputBgClass}`}
-            />
+            <select
+              value={newArticle.category || 'Engineering'}
+              onChange={(e) => setNewArticle({ ...newArticle, category: e.target.value })}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold focus:outline-none cursor-pointer ${inputBgClass}`}
+            >
+              {NEWS_CATEGORIES.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -4432,7 +4579,17 @@ function NewsSection({
           <form onSubmit={(e) => { e.preventDefault(); void persistNews(cms.newsArticles.map((item) => item.id === editing.id ? editing : item)).then((saved) => { if (saved) { updateNewsArticle(editing); setEditing(null); showToast('Article permanently saved.'); } }); }} className={`w-full max-w-2xl rounded-2xl border p-6 space-y-4 shadow-2xl ${cardBgClass}`}>
             <div className="flex items-center justify-between"><h2 className="font-bold">Edit article</h2><button type="button" onClick={() => setEditing(null)}><X className="w-5 h-5" /></button></div>
             <input value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} className={`w-full rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Headline" />
-            <div className="grid gap-3 sm:grid-cols-2"><input value={editing.category} onChange={(e) => setEditing({ ...editing, category: e.target.value })} className={`rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Category" /><input value={editing.author} onChange={(e) => setEditing({ ...editing, author: e.target.value })} className={`rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Author" /></div>
+            <div className="grid gap-3 sm:grid-cols-2"><select
+  value={editing.category || 'Engineering'}
+  onChange={(e) => setEditing({ ...editing, category: e.target.value })}
+  className={`rounded-xl px-3 py-2 text-sm cursor-pointer ${inputBgClass}`}
+>
+  {NEWS_CATEGORIES.map((cat) => (
+    <option key={cat} value={cat}>
+      {cat}
+    </option>
+  ))}
+</select><input value={editing.author} onChange={(e) => setEditing({ ...editing, author: e.target.value })} className={`rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Author" /></div>
             <textarea rows={2} value={editing.excerpt} onChange={(e) => setEditing({ ...editing, excerpt: e.target.value })} className={`w-full rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Excerpt" />
             <textarea rows={7} value={editing.content.join('\n\n')} onChange={(e) => setEditing({ ...editing, content: e.target.value.split('\n\n').filter(Boolean) })} className={`w-full rounded-xl px-3 py-2 text-sm ${inputBgClass}`} placeholder="Article body" />
             <div className="flex justify-end gap-2"><button type="button" onClick={() => setEditing(null)} className="px-4 py-2 text-sm">Cancel</button><button className="rounded-xl bg-lime px-4 py-2 text-sm font-semibold text-forest">Save changes</button></div>

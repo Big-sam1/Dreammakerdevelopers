@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { TargetIcon, EyeIcon, Video } from 'lucide-react';
+import { TargetIcon, EyeIcon, Video, Phone, Mail } from 'lucide-react';
 import { PageHero } from '../components/PageHero';
 import { Eyebrow } from '../components/Eyebrow';
 import { CTASection } from '../components/CTASection';
@@ -102,42 +102,106 @@ export function About() {
           </div>
 
           <div className="mt-12 grid gap-6 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {team.map((member) => (
-              <div
-                key={member.name}
-                className="group flex flex-col items-center text-center rounded-2xl border border-forest/10 bg-cream/60 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-lime hover:bg-cream hover:shadow-md"
-              >
-                <div className="relative mb-4">
-                  <img
-                    src={member.image}
-                    alt={member.name}
-                    className="h-20 w-20 rounded-full border-2 border-forest/15 object-cover transition-transform duration-300 group-hover:scale-105 group-hover:border-lime"
-                    style={{ borderRadius: '100%' }}
-                    loading="lazy"
-                  />
-                  <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-lime" />
+            {team.map((member) => {
+              const hoverPhoto = member.secondImage || member.image;
+              const phoneHref = member.phone
+                ? (member.phone.startsWith('tel:') ? member.phone : `tel:${member.phone.replace(/[^+\d]/g, '')}`)
+                : (cms.company?.phone ? `tel:${cms.company.phone.replace(/[^+\d]/g, '')}` : undefined);
+              const emailHref = member.email
+                ? (member.email.startsWith('mailto:') ? member.email : `mailto:${member.email}`)
+                : (cms.company?.email ? `mailto:${cms.company.email}` : undefined);
+
+              return (
+                <div
+                  key={member.name}
+                  className="group relative flex flex-col items-center text-center rounded-2xl border border-forest/10 bg-cream/60 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-lime hover:bg-cream hover:shadow-xl overflow-hidden min-h-[220px]"
+                >
+                  {/* Default portrait view */}
+                  <div className="relative mb-4">
+                    <img
+                      src={member.image}
+                      alt={member.name}
+                      className="h-20 w-20 rounded-full border-2 border-forest/15 object-cover transition-transform duration-300 group-hover:scale-105 group-hover:border-lime"
+                      style={{ borderRadius: '100%' }}
+                      loading="lazy"
+                    />
+                    <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-white bg-lime" />
+                  </div>
+                  <h3 className="font-display text-sm font-bold text-forest group-hover:text-forest-mid transition-colors">
+                    {member.name}
+                  </h3>
+                  <p className="mt-1 text-xs font-medium text-forest/65 leading-tight">
+                    {member.role}
+                  </p>
+                  <span className="mt-3 inline-block rounded-full bg-white px-2.5 py-0.5 text-[10px] font-semibold text-forest/60 border border-forest/5">
+                    {member.specialty}
+                  </span>
+
+                  {/* Cursor reach / hover: Expanded second image covering the whole container with 2 direct action icons */}
+                  <div className="absolute inset-0 z-10 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-500 ease-out flex flex-col justify-between p-4 overflow-hidden">
+                    {/* Background expanded secondary image */}
+                    <img
+                      src={hoverPhoto}
+                      alt={member.name}
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                    />
+                    {/* Dark gradient overlay for clear contrast */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-forest-deep/95 via-forest-deep/60 to-forest-deep/20" />
+
+                    {/* Top specialty pill */}
+                    <div className="relative z-10 flex justify-end">
+                      <span className="px-2 py-0.5 rounded-full bg-lime text-forest text-[9px] font-bold tracking-wider uppercase shadow-sm">
+                        {member.specialty}
+                      </span>
+                    </div>
+
+                    {/* Bottom member info & 2 action icons (Phone + Email) */}
+                    <div className="relative z-10 text-left pt-2">
+                      <h4 className="font-display text-sm font-bold text-white drop-shadow truncate">
+                        {member.name}
+                      </h4>
+                      <p className="text-[11px] font-medium text-cream/80 drop-shadow truncate mt-0.5">
+                        {member.role}
+                      </p>
+
+                      <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-white/20">
+                        {phoneHref && (
+                          <a
+                            href={phoneHref}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl bg-lime hover:bg-lime/90 text-forest font-bold text-[11px] transition-transform hover:scale-105 shadow cursor-pointer"
+                            title={member.phone ? `Call ${member.phone}` : `Call ${member.name}`}
+                          >
+                            <Phone className="w-3.5 h-3.5" />
+                            <span>Call</span>
+                          </a>
+                        )}
+                        {emailHref && (
+                          <a
+                            href={emailHref}
+                            onClick={(e) => e.stopPropagation()}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm font-bold text-[11px] transition-transform hover:scale-105 border border-white/30 shadow cursor-pointer"
+                            title={member.email ? `Email ${member.email}` : `Email ${member.name}`}
+                          >
+                            <Mail className="w-3.5 h-3.5 text-lime" />
+                            <span>Email</span>
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <h3 className="font-display text-sm font-bold text-forest group-hover:text-forest-mid">
-                  {member.name}
-                </h3>
-                <p className="mt-1 text-xs font-medium text-forest/65 leading-tight">
-                  {member.role}
-                </p>
-                <span className="mt-3 inline-block rounded-full bg-white px-2.5 py-0.5 text-[10px] font-semibold text-forest/60 border border-forest/5">
-                  {member.specialty}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* Sliding partner images — scroll right-to-left, no visible duplicates, seamless loop */}
+      {/* Sliding partner images — single list without duplication, sliding right to left */}
       <section className="border-y border-white/10 bg-forest py-8 overflow-hidden">
         <div className="relative w-full overflow-hidden">
-          {/* Duplicate the unique list once so the marquee loops seamlessly */}
-          <div className="animate-marquee flex items-center gap-8">
-            {[...uniquePartners, ...uniquePartners].map((imgSrc, idx) => (
+          <div className="animate-marquee-rtl flex items-center gap-8">
+            {uniquePartners.map((imgSrc, idx) => (
               <div
                 key={`${imgSrc}-${idx}`}
                 className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-full border-2 border-lime/40 bg-white/10 p-1 shadow-md transition-all hover:scale-110 hover:border-lime"

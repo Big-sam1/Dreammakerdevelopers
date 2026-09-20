@@ -239,14 +239,17 @@ export function News() {
 
   const filteredArticles = useMemo(() => {
     if (activeCategory === 'All') return allArticles;
+    const target = activeCategory.trim().toLowerCase();
     return allArticles.filter((a) => {
-      const cat = (a.category || '').toLowerCase();
-      const target = activeCategory.toLowerCase();
+      const cat = (a.category || '').trim().toLowerCase();
       if (cat === target) return true;
-      if (target === 'ai & ml' && (cat.includes('ai') || cat.includes('ml'))) return true;
-      if (target === 'ui/ux design' && (cat.includes('design') || cat.includes('ui'))) return true;
+      if (target === 'ai & ml' && (cat.includes('ai') || cat.includes('ml') || cat === 'ai & ml')) return true;
+      if (target === 'ui/ux design' && (cat.includes('ui') || cat.includes('ux') || cat.includes('design'))) return true;
       if (target === 'cloud & devops' && (cat.includes('cloud') || cat.includes('devops') || cat.includes('infra'))) return true;
-      return cat.includes(target) || a.title.toLowerCase().includes(target);
+      if (target === 'mobile' && (cat.includes('mobile') || cat.includes('flutter') || cat.includes('ios') || cat.includes('android'))) return true;
+      if (target === 'engineering' && (cat.includes('engineer') || cat.includes('arch') || cat.includes('tech') || cat.includes('opinion'))) return true;
+      if (target === 'business' && (cat.includes('business') || cat.includes('milestone') || cat.includes('latest') || cat.includes('growth'))) return true;
+      return cat === target || cat.includes(target);
     });
   }, [allArticles, activeCategory]);
 

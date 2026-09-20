@@ -158,20 +158,24 @@ h4 {
   will-change: transform;
 }
 
-/* Sliding partners logo marquee — right-to-left infinite scroll */
-@keyframes marquee {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+/* Sliding partners logo marquee — right-to-left single-pass infinite scroll */
+@keyframes marquee-rtl {
+  0% {
+    transform: translateX(100vw);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
 }
 
-.animate-marquee {
+.animate-marquee-rtl {
   display: flex;
   width: max-content;
-  animation: marquee 28s linear infinite;
+  animation: marquee-rtl 25s linear infinite;
   will-change: transform;
 }
 
-.animate-marquee:hover {
+.animate-marquee-rtl:hover {
   animation-play-state: paused;
 }
 
