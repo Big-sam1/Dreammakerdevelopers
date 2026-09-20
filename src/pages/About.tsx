@@ -33,10 +33,44 @@ export function About() {
   useEffect(() => { setVideoFailed(false); }, [workflow.videoUrl]);
 
   // Opposite bouncing animation: single partner stays centered, multiple partners bounce in opposite directions from center
+  // As cursor/user scrolls down, left and right partners separate outward; as cursor moves up, they come close (not tight)
   const isSinglePartner = uniquePartners.length <= 1;
   const midPartnerIdx = Math.ceil(uniquePartners.length / 2);
   const leftSidePartners = uniquePartners.slice(0, midPartnerIdx);
   const rightSidePartners = uniquePartners.slice(midPartnerIdx);
+
+  const partnersSectionRef = useRef<HTMLElement>(null);
+  const [spreadPx, setSpreadPx] = useState(25); // 25px when close together
+
+  useEffect(() => {
+    let ticking = false;
+
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          if (partnersSectionRef.current) {
+            const rect = partnersSectionRef.current.getBoundingClientRect();
+            const windowHeight = window.innerHeight;
+            const totalDistance = windowHeight + rect.height;
+            const currentPosition = windowHeight - rect.top;
+            const progress = Math.max(0, Math.min(1, currentPosition / totalDistance));
+
+            // Cursor moves down (progress increases -> separates up to 140px)
+            // Cursor moves up (progress decreases -> closes down to 20px, not tight)
+            const distance = 20 + Math.round(progress * 130);
+            setSpreadPx(distance);
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
     <>
@@ -196,13 +230,16 @@ export function About() {
         </div>
       </section>
 
-      {/* Partner images — if 1 stays centered, if more than 1 bounce in opposite directions from center */}
-      <section className="border-y border-white/10 bg-forest py-6 sm:py-8 overflow-hidden relative select-none">
+      {/* Partner images — increased size, single partner stays centered, multiple separate by bouncing as cursor moves down and come close as cursor moves up */}
+      <section
+        ref={partnersSectionRef}
+        className="border-y border-white/10 bg-forest py-8 sm:py-12 overflow-hidden relative select-none"
+      >
         <div className="max-w-7xl mx-auto px-4">
           {isSinglePartner ? (
-            /* Single partner: stays permanently centered */
-            <div className="flex items-center justify-center w-full py-2">
-              <div className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-full border-2 border-lime/70 bg-white/10 p-1.5 shadow-xl backdrop-blur-sm animate-partner-center transition-transform hover:scale-110 hover:border-lime cursor-pointer">
+            /* Single partner: stays permanently centered with larger scale */
+            <div className="flex items-center justify-center w-full py-4">
+              <div className="h-24 w-24 sm:h-32 sm:w-32 md:h-36 md:w-36 shrink-0 overflow-hidden rounded-full border-[3px] sm:border-4 border-lime/75 bg-white/10 p-2 sm:p-2.5 shadow-2xl backdrop-blur-sm animate-partner-center transition-transform hover:scale-110 hover:border-lime cursor-pointer">
                 <img
                   src={uniquePartners[0]}
                   alt="Partner"
@@ -211,15 +248,20 @@ export function About() {
               </div>
             </div>
           ) : (
-            /* Multiple partners: start from center and bounce in opposite directions */
-            <div className="flex items-center justify-center w-full gap-3 sm:gap-8 py-2 overflow-hidden">
-              {/* Left group: bounces in left opposite direction from center */}
-              <div className="flex items-center gap-3 sm:gap-5 animate-partner-bounce-left justify-end flex-1">
+            /* Multiple partners (even if 2): separate in opposite directions with bouncing as cursor moves down, come close as cursor moves up */
+            <div className="flex items-center justify-center w-full py-4 overflow-hidden">
+              {/* Left group: moves in left direction bouncing, separating as cursor moves down, coming close as cursor moves up */}
+              <div
+                className="flex items-center gap-4 sm:gap-7 justify-end flex-1 will-change-transform transition-transform duration-300 ease-out"
+                style={{
+                  transform: `translate3d(-${spreadPx}px, 0, 0)`,
+                }}
+              >
                 {leftSidePartners.map((imgSrc, idx) => (
                   <div
                     key={`left-${imgSrc}-${idx}`}
-                    style={{ animationDelay: `${idx * 0.22}s` }}
-                    className="h-14 w-14 sm:h-18 sm:w-18 shrink-0 overflow-hidden rounded-full border-2 border-lime/50 bg-white/10 p-1.5 shadow-lg backdrop-blur-sm transition-all hover:scale-110 hover:border-lime cursor-pointer"
+                    style={{ animationDelay: `${idx * 0.18}s` }}
+                    className="h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28 shrink-0 overflow-hidden rounded-full border-2 sm:border-[3px] border-lime/65 bg-white/10 p-1.5 sm:p-2 shadow-2xl backdrop-blur-sm animate-partner-bounce-left transition-all hover:scale-110 hover:border-lime cursor-pointer"
                   >
                     <img
                       src={imgSrc}
@@ -231,15 +273,20 @@ export function About() {
               </div>
 
               {/* Center anchor pulse */}
-              <div className="h-2.5 w-2.5 rounded-full bg-lime/50 shrink-0 animate-pulse shadow-sm" />
+              <div className="h-3 w-3 sm:h-4 sm:w-4 rounded-full bg-lime/60 shrink-0 mx-2 sm:mx-4 animate-pulse shadow-md" />
 
-              {/* Right group: bounces in right opposite direction from center */}
-              <div className="flex items-center gap-3 sm:gap-5 animate-partner-bounce-right justify-start flex-1">
+              {/* Right group: moves in right direction bouncing, separating as cursor moves down, coming close as cursor moves up */}
+              <div
+                className="flex items-center gap-4 sm:gap-7 justify-start flex-1 will-change-transform transition-transform duration-300 ease-out"
+                style={{
+                  transform: `translate3d(${spreadPx}px, 0, 0)`,
+                }}
+              >
                 {rightSidePartners.map((imgSrc, idx) => (
                   <div
                     key={`right-${imgSrc}-${idx}`}
-                    style={{ animationDelay: `${idx * 0.22}s` }}
-                    className="h-14 w-14 sm:h-18 sm:w-18 shrink-0 overflow-hidden rounded-full border-2 border-lime/50 bg-white/10 p-1.5 shadow-lg backdrop-blur-sm transition-all hover:scale-110 hover:border-lime cursor-pointer"
+                    style={{ animationDelay: `${idx * 0.18}s` }}
+                    className="h-20 w-20 sm:h-24 sm:w-24 md:h-28 md:w-28 shrink-0 overflow-hidden rounded-full border-2 sm:border-[3px] border-lime/65 bg-white/10 p-1.5 sm:p-2 shadow-2xl backdrop-blur-sm animate-partner-bounce-right transition-all hover:scale-110 hover:border-lime cursor-pointer"
                   >
                     <img
                       src={imgSrc}

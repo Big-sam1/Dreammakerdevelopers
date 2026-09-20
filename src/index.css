@@ -158,40 +158,34 @@ h4 {
   will-change: transform;
 }
 
-/* Partners opposite bouncing animation (calm, fluid, playful) */
-@keyframes bounce-spread-right {
-  0% {
-    transform: translate3d(0, 0, 0);
+/* Partners bouncing animations: vertical rhythmic bounce paired with scroll-driven horizontal spread */
+@keyframes bounce-partner-left {
+  0%, 100% {
+    transform: translateY(0);
   }
-  25% {
-    transform: translate3d(35px, -8px, 0);
+  30% {
+    transform: translateY(-12px) scale(1.03);
   }
-  50% {
-    transform: translate3d(70px, 4px, 0);
+  60% {
+    transform: translateY(6px) scale(0.98);
   }
-  75% {
-    transform: translate3d(35px, -5px, 0);
-  }
-  100% {
-    transform: translate3d(0, 0, 0);
+  80% {
+    transform: translateY(-4px) scale(1.01);
   }
 }
 
-@keyframes bounce-spread-left {
-  0% {
-    transform: translate3d(0, 0, 0);
+@keyframes bounce-partner-right {
+  0%, 100% {
+    transform: translateY(0);
   }
-  25% {
-    transform: translate3d(-35px, -8px, 0);
+  30% {
+    transform: translateY(-12px) scale(1.03);
   }
-  50% {
-    transform: translate3d(-70px, 4px, 0);
+  60% {
+    transform: translateY(6px) scale(0.98);
   }
-  75% {
-    transform: translate3d(-35px, -5px, 0);
-  }
-  100% {
-    transform: translate3d(0, 0, 0);
+  80% {
+    transform: translateY(-4px) scale(1.01);
   }
 }
 
@@ -200,22 +194,22 @@ h4 {
     transform: translate3d(0, 0, 0) scale(1);
   }
   50% {
-    transform: translate3d(0, -6px, 0) scale(1.04);
+    transform: translate3d(0, -10px, 0) scale(1.05);
   }
 }
 
 .animate-partner-bounce-right {
-  animation: bounce-spread-right 4.8s ease-in-out infinite;
+  animation: bounce-partner-right 3.4s ease-in-out infinite;
   will-change: transform;
 }
 
 .animate-partner-bounce-left {
-  animation: bounce-spread-left 4.8s ease-in-out infinite;
+  animation: bounce-partner-left 3.4s ease-in-out infinite;
   will-change: transform;
 }
 
 .animate-partner-center {
-  animation: bounce-center-stay 4s ease-in-out infinite;
+  animation: bounce-center-stay 3.8s ease-in-out infinite;
   will-change: transform;
 }
 
