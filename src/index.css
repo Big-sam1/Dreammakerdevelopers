@@ -158,31 +158,65 @@ h4 {
   will-change: transform;
 }
 
-/* Sliding partner: one by one, starts right at 0 margin, fast motion to slow motion, 4 seconds */
-@keyframes partner-slide-rtl {
+/* Partners opposite bouncing animation (calm, fluid, playful) */
+@keyframes bounce-spread-right {
   0% {
     transform: translate3d(0, 0, 0);
-    opacity: 0.4;
   }
-  8% {
-    opacity: 1;
+  25% {
+    transform: translate3d(35px, -8px, 0);
   }
-  88% {
-    opacity: 1;
+  50% {
+    transform: translate3d(70px, 4px, 0);
+  }
+  75% {
+    transform: translate3d(35px, -5px, 0);
   }
   100% {
-    transform: translate3d(calc(-100vw - 220px), 0, 0);
-    opacity: 0.6;
+    transform: translate3d(0, 0, 0);
   }
 }
 
-.animate-partner-single {
-  animation: partner-slide-rtl 4s cubic-bezier(0.08, 0.85, 0.2, 1) forwards;
-  will-change: transform, opacity;
+@keyframes bounce-spread-left {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  25% {
+    transform: translate3d(-35px, -8px, 0);
+  }
+  50% {
+    transform: translate3d(-70px, 4px, 0);
+  }
+  75% {
+    transform: translate3d(-35px, -5px, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
 }
 
-.animate-partner-single:hover {
-  animation-play-state: paused;
+@keyframes bounce-center-stay {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -6px, 0) scale(1.04);
+  }
+}
+
+.animate-partner-bounce-right {
+  animation: bounce-spread-right 4.8s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-partner-bounce-left {
+  animation: bounce-spread-left 4.8s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-partner-center {
+  animation: bounce-center-stay 4s ease-in-out infinite;
+  will-change: transform;
 }
 
 /* When custom full-page background image is applied, make containers transparent and text/logos crisp */

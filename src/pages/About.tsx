@@ -32,44 +32,11 @@ export function About() {
   // Reset failed state whenever the URL changes (new video uploaded)
   useEffect(() => { setVideoFailed(false); }, [workflow.videoUrl]);
 
-  // One partner moves at a time, one by one another, 4s duration, fast-to-slow motion
-  const [activePartnerIdx, setActivePartnerIdx] = useState(0);
-  const lastScrollY = useRef(0);
-  const scrollDeltaAccumulator = useRef(0);
-
-  // 4-second sequence: moves one partner at a time sequentially
-  useEffect(() => {
-    if (uniquePartners.length === 0) return;
-    const timer = setInterval(() => {
-      setActivePartnerIdx((prev) => (prev + 1) % uniquePartners.length);
-    }, 4000);
-    return () => clearInterval(timer);
-  }, [uniquePartners.length]);
-
-  // As cursor/user scrolls down, trigger/advance the next partner across the screen
-  useEffect(() => {
-    if (uniquePartners.length === 0) return;
-    const onScroll = () => {
-      const currentY = window.scrollY;
-      const delta = currentY - lastScrollY.current;
-      lastScrollY.current = currentY;
-
-      if (delta > 20) {
-        scrollDeltaAccumulator.current += delta;
-        if (scrollDeltaAccumulator.current > 120) {
-          scrollDeltaAccumulator.current = 0;
-          setActivePartnerIdx((prev) => (prev + 1) % uniquePartners.length);
-        }
-      } else if (delta < -20) {
-        scrollDeltaAccumulator.current = 0;
-      }
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [uniquePartners.length]);
-
-  const currentPartnerImg = uniquePartners[activePartnerIdx] || uniquePartners[0];
+  // Opposite bouncing animation: single partner stays centered, multiple partners bounce in opposite directions from center
+  const isSinglePartner = uniquePartners.length <= 1;
+  const midPartnerIdx = Math.ceil(uniquePartners.length / 2);
+  const leftSidePartners = uniquePartners.slice(0, midPartnerIdx);
+  const rightSidePartners = uniquePartners.slice(midPartnerIdx);
 
   return (
     <>
@@ -229,24 +196,59 @@ export function About() {
         </div>
       </section>
 
-      {/* Sliding partner images — one partner moves at a time, starting from right at 0 margin to left, fast-to-slow 4s motion */}
+      {/* Partner images — if 1 stays centered, if more than 1 bounce in opposite directions from center */}
       <section className="border-y border-white/10 bg-forest py-6 sm:py-8 overflow-hidden relative select-none">
-        <div className="relative w-full h-20 sm:h-24 overflow-hidden flex items-center">
-          {currentPartnerImg && (
-            <div
-              key={activePartnerIdx}
-              className="absolute right-0 flex items-center gap-3.5 animate-partner-single cursor-pointer"
-            >
-              <div className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-full border-2 border-lime/80 bg-white/10 p-1.5 shadow-2xl backdrop-blur-sm transition-all hover:scale-110 hover:border-lime">
+        <div className="max-w-7xl mx-auto px-4">
+          {isSinglePartner ? (
+            /* Single partner: stays permanently centered */
+            <div className="flex items-center justify-center w-full py-2">
+              <div className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-full border-2 border-lime/70 bg-white/10 p-1.5 shadow-xl backdrop-blur-sm animate-partner-center transition-transform hover:scale-110 hover:border-lime cursor-pointer">
                 <img
-                  src={currentPartnerImg}
-                  alt={`Partner ${activePartnerIdx + 1}`}
+                  src={uniquePartners[0]}
+                  alt="Partner"
                   className="h-full w-full rounded-full object-cover"
                 />
               </div>
-              <span className="hidden sm:inline-block px-3 py-1 rounded-full bg-forest-deep/90 border border-lime/40 text-[10px] font-bold text-lime uppercase tracking-widest shadow-md">
-                Partner {activePartnerIdx + 1} / {uniquePartners.length}
-              </span>
+            </div>
+          ) : (
+            /* Multiple partners: start from center and bounce in opposite directions */
+            <div className="flex items-center justify-center w-full gap-3 sm:gap-8 py-2 overflow-hidden">
+              {/* Left group: bounces in left opposite direction from center */}
+              <div className="flex items-center gap-3 sm:gap-5 animate-partner-bounce-left justify-end flex-1">
+                {leftSidePartners.map((imgSrc, idx) => (
+                  <div
+                    key={`left-${imgSrc}-${idx}`}
+                    style={{ animationDelay: `${idx * 0.22}s` }}
+                    className="h-14 w-14 sm:h-18 sm:w-18 shrink-0 overflow-hidden rounded-full border-2 border-lime/50 bg-white/10 p-1.5 shadow-lg backdrop-blur-sm transition-all hover:scale-110 hover:border-lime cursor-pointer"
+                  >
+                    <img
+                      src={imgSrc}
+                      alt={`Partner Left ${idx + 1}`}
+                      className="h-full w-full rounded-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Center anchor pulse */}
+              <div className="h-2.5 w-2.5 rounded-full bg-lime/50 shrink-0 animate-pulse shadow-sm" />
+
+              {/* Right group: bounces in right opposite direction from center */}
+              <div className="flex items-center gap-3 sm:gap-5 animate-partner-bounce-right justify-start flex-1">
+                {rightSidePartners.map((imgSrc, idx) => (
+                  <div
+                    key={`right-${imgSrc}-${idx}`}
+                    style={{ animationDelay: `${idx * 0.22}s` }}
+                    className="h-14 w-14 sm:h-18 sm:w-18 shrink-0 overflow-hidden rounded-full border-2 border-lime/50 bg-white/10 p-1.5 shadow-lg backdrop-blur-sm transition-all hover:scale-110 hover:border-lime cursor-pointer"
+                  >
+                    <img
+                      src={imgSrc}
+                      alt={`Partner Right ${idx + 1}`}
+                      className="h-full w-full rounded-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
