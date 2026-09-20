@@ -158,20 +158,16 @@ h4 {
   will-change: transform;
 }
 
-/* Sliding partners logo marquee */
+/* Sliding partners logo marquee — right-to-left infinite scroll */
 @keyframes marquee {
-  0% {
-    transform: translateX(100vw);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
 .animate-marquee {
   display: flex;
   width: max-content;
-  animation: marquee 24s linear infinite;
+  animation: marquee 28s linear infinite;
   will-change: transform;
 }
 

@@ -235,6 +235,11 @@ export type CMSState = {
     studio: string;
     lounge: string;
   };
+  workspaceLabels: {
+    lab:    { title: string; description: string; caption: string };
+    studio: { title: string; description: string; caption: string };
+    lounge: { title: string; description: string; caption: string };
+  };
 
   // 13. Page Heroes
   pageHeroes: {
@@ -603,6 +608,12 @@ const defaultState: CMSState = {
     lounge: '/67bedf41-d607-4532-8e95-cdbc38a213b5.jpg',
   },
 
+  workspaceLabels: {
+    lab:    { title: 'Systems Lab',     description: 'Hardware & distributed infrastructure',  caption: 'Innovation Lab' },
+    studio: { title: 'Design Studio',   description: 'Interface design and ergonomics suite',  caption: 'Sprint Studio'  },
+    lounge: { title: 'Collab Lounge',   description: 'Client sprint rooms and demo staging',   caption: 'Design Lounge'  },
+  },
+
   pageHeroes: {
     about: {
       eyebrow: 'About',
@@ -737,6 +748,7 @@ type CMSContextType = {
   updateLogos: (logos: { navLogo?: string; footerLogo?: string; favicon?: string; brandName?: string; brandSubtitle?: string }) => void;
   updateWorkflow: (workflow: CMSState['workflow']) => void;
   updateWorkspaceImages: (images: CMSState['workspaceImages']) => void;
+  updateWorkspaceLabels: (labels: CMSState['workspaceLabels']) => void;
   updatePageHero: (page: keyof CMSState['pageHeroes'], data: Partial<PageHeroItem>) => void;
   updateCtaSection: (page: CTASectionKey, data: Partial<CTASectionItem>) => void;
   updateHeroDescription: (description: string) => void;
@@ -813,6 +825,11 @@ function mergeWithDefaults(parsed: any): CMSState {
     projects: Array.isArray(parsed.projects) && parsed.projects.length > 0 ? parsed.projects : defaultState.projects,
     newsArticles: Array.isArray(parsed.newsArticles) && parsed.newsArticles.length > 0 ? parsed.newsArticles : defaultState.newsArticles,
     workspaceImages: { ...defaultState.workspaceImages, ...(parsed.workspaceImages || {}) },
+    workspaceLabels: {
+      lab:    { ...defaultState.workspaceLabels.lab,    ...(parsed.workspaceLabels?.lab    || {}) },
+      studio: { ...defaultState.workspaceLabels.studio, ...(parsed.workspaceLabels?.studio || {}) },
+      lounge: { ...defaultState.workspaceLabels.lounge, ...(parsed.workspaceLabels?.lounge || {}) },
+    },
     pageHeroes: {
       about: { ...defaultState.pageHeroes.about, ...(parsed.pageHeroes?.about || {}) },
       services: { ...defaultState.pageHeroes.services, ...(parsed.pageHeroes?.services || {}) },
@@ -1023,6 +1040,10 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
 
   const updateWorkspaceImages = (workspaceImages: CMSState['workspaceImages']) => {
     setCms((prev) => ({ ...prev, workspaceImages }));
+  };
+
+  const updateWorkspaceLabels = (workspaceLabels: CMSState['workspaceLabels']) => {
+    setCms((prev) => ({ ...prev, workspaceLabels }));
   };
 
   const updatePageHero = (page: keyof CMSState['pageHeroes'], data: Partial<PageHeroItem>) => {
@@ -1258,6 +1279,7 @@ export function CMSProvider({ children }: { children: React.ReactNode }) {
         updateLogos,
         updateWorkflow,
         updateWorkspaceImages,
+        updateWorkspaceLabels,
         updatePageHero,
         updateCtaSection,
         updateHeroDescription,

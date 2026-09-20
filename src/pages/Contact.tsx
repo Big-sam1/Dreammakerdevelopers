@@ -40,6 +40,16 @@ export function Contact() {
     ...defaultWorkspaceImages,
     ...(cms.workspaceImages || {}),
   };
+  const defaultWorkspaceLabels = {
+    lab:    { caption: 'Innovation Lab' },
+    studio: { caption: 'Sprint Studio'  },
+    lounge: { caption: 'Design Lounge'  },
+  };
+  const workspaceLabels = {
+    lab:    { ...defaultWorkspaceLabels.lab,    ...(cms.workspaceLabels?.lab    || {}) },
+    studio: { ...defaultWorkspaceLabels.studio, ...(cms.workspaceLabels?.studio || {}) },
+    lounge: { ...defaultWorkspaceLabels.lounge, ...(cms.workspaceLabels?.lounge || {}) },
+  };
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
@@ -163,7 +173,7 @@ export function Contact() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-forest/75 via-transparent to-transparent opacity-60" />
                     <span className="absolute bottom-2 left-2 text-[10px] font-semibold text-white px-1.5 py-0.5 rounded bg-forest/80 backdrop-blur-sm">
-                      Innovation Lab
+                      {workspaceLabels.lab.caption}
                     </span>
                   </div>
 
@@ -178,7 +188,7 @@ export function Contact() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-forest/75 via-transparent to-transparent opacity-60" />
                     <span className="absolute bottom-2 left-2 text-[10px] font-semibold text-white px-1.5 py-0.5 rounded bg-forest/80 backdrop-blur-sm">
-                      Sprint Studio
+                      {workspaceLabels.studio.caption}
                     </span>
                   </div>
 
@@ -193,7 +203,7 @@ export function Contact() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-forest/75 via-transparent to-transparent opacity-60" />
                     <span className="absolute bottom-2 left-2 text-[10px] font-semibold text-white px-1.5 py-0.5 rounded bg-forest/80 backdrop-blur-sm">
-                      Design Lounge
+                      {workspaceLabels.lounge.caption}
                     </span>
                   </div>
 

@@ -142,6 +142,7 @@ export function AdminDashboard() {
     updateLogos,
     updateWorkflow,
     updateWorkspaceImages,
+    updateWorkspaceLabels,
     updatePageHero,
     updateCtaSection,
     updateHeroDescription,
@@ -936,6 +937,7 @@ export function AdminDashboard() {
               cms={cms}
               persistStateDirectly={persistStateDirectly}
               updateWorkspaceImages={updateWorkspaceImages}
+              updateWorkspaceLabels={updateWorkspaceLabels}
               handleFileUpload={handleFileUpload}
               uploadingField={uploadingField}
               showToast={showToast}
@@ -4456,6 +4458,7 @@ function WorkspaceSection({
   cms,
   persistStateDirectly,
   updateWorkspaceImages,
+  updateWorkspaceLabels,
   handleFileUpload,
   uploadingField,
   showToast,
@@ -4466,6 +4469,7 @@ function WorkspaceSection({
   cms: ReturnType<typeof useCMS>['cms'];
   persistStateDirectly: ReturnType<typeof useCMS>['persistStateDirectly'];
   updateWorkspaceImages: ReturnType<typeof useCMS>['updateWorkspaceImages'];
+  updateWorkspaceLabels: ReturnType<typeof useCMS>['updateWorkspaceLabels'];
   handleFileUpload: (e: React.ChangeEvent<HTMLInputElement>, f: string, cb: (url: string) => void) => void;
   uploadingField: string | null;
   showToast: (m: string) => void;
@@ -4479,15 +4483,26 @@ function WorkspaceSection({
     lounge: '/67bedf41-d607-4532-8e95-cdbc38a213b5.jpg',
   };
 
+  const defaultLabels = {
+    lab:    { title: 'Systems Lab',    description: 'Hardware & distributed infrastructure',  caption: 'Innovation Lab' },
+    studio: { title: 'Design Studio',  description: 'Interface design and ergonomics suite',  caption: 'Sprint Studio'  },
+    lounge: { title: 'Collab Lounge',  description: 'Client sprint rooms and demo staging',   caption: 'Design Lounge'  },
+  };
+
   const [images, setImages] = useState(cms.workspaceImages || defaultWorkspaceImages);
+  const [labels, setLabels] = useState(cms.workspaceLabels || defaultLabels);
   const [localPreviews, setLocalPreviews] = useState<Record<string, string>>({});
-  const [savingField, setSavingField] = useState<string | null>(null);
+  const [editingLabelKey, setEditingLabelKey] = useState<string | null>(null);
+  const [labelDraft, setLabelDraft] = useState<{ title: string; description: string; caption: string } | null>(null);
+  const [savingLabelKey, setSavingLabelKey] = useState<string | null>(null);
 
   useEffect(() => {
-    if (cms.workspaceImages) {
-      setImages(cms.workspaceImages);
-    }
+    if (cms.workspaceImages) setImages(cms.workspaceImages);
   }, [cms.workspaceImages]);
+
+  useEffect(() => {
+    if (cms.workspaceLabels) setLabels(cms.workspaceLabels);
+  }, [cms.workspaceLabels]);
 
   const handleSaveAll = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -4496,74 +4511,44 @@ function WorkspaceSection({
       ...prev,
       workspaceImages: images,
     }));
-    showToast(
-      saved
-        ? 'All 3 Kagarama Hub photos permanently saved to Supabase!'
-        : 'Saved locally — Supabase save failed. Please check connection and retry.'
-    );
+    showToast(saved ? 'All 3 Kagarama Hub photos permanently saved to Supabase!' : 'Saved locally — Supabase save failed. Please check connection and retry.');
   };
 
-  const handleFileChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    key: 'lab' | 'studio' | 'lounge',
-    label: string
-  ) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, key: 'lab' | 'studio' | 'lounge', label: string) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Immediately show local preview URL so the admin sees the new photo instantly
     const previewUrl = URL.createObjectURL(file);
     setLocalPreviews((prev) => ({ ...prev, [key]: previewUrl }));
-
     handleFileUpload(e, key, async (permanentUrl) => {
-      // Clean up object URL
       URL.revokeObjectURL(previewUrl);
-      setLocalPreviews((prev) => {
-        const copy = { ...prev };
-        delete copy[key];
-        return copy;
-      });
-
-      // Update state with the permanent Supabase Storage URL
+      setLocalPreviews((prev) => { const copy = { ...prev }; delete copy[key]; return copy; });
       setImages((prev) => ({ ...prev, [key]: permanentUrl }));
       updateWorkspaceImages({ ...images, [key]: permanentUrl });
-
-      // Save directly to Supabase using functional updater (never loses state)
-      const saved = await persistStateDirectly((prev) => ({
-        ...prev,
-        workspaceImages: {
-          ...prev.workspaceImages,
-          [key]: permanentUrl,
-        },
-      }));
-
-      showToast(
-        saved
-          ? `${label} photo uploaded and permanently saved to Supabase!`
-          : `${label} uploaded locally — Supabase save failed. Please retry.`
-      );
+      const saved = await persistStateDirectly((prev) => ({ ...prev, workspaceImages: { ...prev.workspaceImages, [key]: permanentUrl } }));
+      showToast(saved ? `${label} photo uploaded and permanently saved to Supabase!` : `${label} uploaded locally — Supabase save failed. Please retry.`);
     });
   };
 
-  const handleDirectUrlSave = async (key: 'lab' | 'studio' | 'lounge', label: string) => {
-    setSavingField(key);
-    updateWorkspaceImages(images);
-    const saved = await persistStateDirectly((prev) => ({
-      ...prev,
-      workspaceImages: images,
-    }));
-    setSavingField(null);
-    showToast(
-      saved
-        ? `${label} URL permanently saved to Supabase!`
-        : 'Saved locally — Supabase save failed. Please retry.'
-    );
+  const handleStartLabelEdit = (key: 'lab' | 'studio' | 'lounge') => {
+    setEditingLabelKey(key);
+    setLabelDraft({ ...labels[key] });
   };
 
-  const hubItems = [
-    { key: 'lab' as const, label: 'Systems Lab', desc: 'Hardware & distributed infrastructure' },
-    { key: 'studio' as const, label: 'Design Studio', desc: 'Interface design and ergonomics suite' },
-    { key: 'lounge' as const, label: 'Collab Lounge', desc: 'Client sprint rooms and demo staging' },
+  const handleSaveLabel = async (key: 'lab' | 'studio' | 'lounge') => {
+    if (!labelDraft) return;
+    setSavingLabelKey(key);
+    const updatedLabels = { ...labels, [key]: labelDraft };
+    setLabels(updatedLabels);
+    updateWorkspaceLabels(updatedLabels);
+    const saved = await persistStateDirectly((prev) => ({ ...prev, workspaceLabels: updatedLabels }));
+    setSavingLabelKey(null);
+    setEditingLabelKey(null);
+    setLabelDraft(null);
+    showToast(saved ? `"${labelDraft.title}" label permanently saved to Supabase!` : 'Saved locally — Supabase save failed. Please retry.');
+  };
+
+  const hubItems: Array<{ key: 'lab' | 'studio' | 'lounge' }> = [
+    { key: 'lab' }, { key: 'studio' }, { key: 'lounge' },
   ];
 
   return (
@@ -4573,41 +4558,98 @@ function WorkspaceSection({
           {cms.sectionTitles?.workspacesTitle || 'Our Kagarama Hub & Workspaces'}
         </h1>
         <p className={`text-xs ${isLight ? 'text-gray-500' : 'text-cream/60'}`}>
-          Upload the 3 studio and engineering frames displayed alongside the FAQ in Contact. Uploaded images save permanently to Supabase and show live on the user site.
+          Upload photos and edit card labels (title, description, caption). All changes save permanently to Supabase and show live on the Contact page.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {hubItems.map((hub) => {
-          const displayUrl = localPreviews[hub.key] || images[hub.key] || defaultWorkspaceImages[hub.key];
-          const isUploading = uploadingField === hub.key;
-          const isSaving = savingField === hub.key;
+        {hubItems.map(({ key }) => {
+          const displayUrl = localPreviews[key] || images[key] || defaultWorkspaceImages[key];
+          const isUploading = uploadingField === key;
+          const curLabel = labels[key] || defaultLabels[key];
+          const isEditingLabel = editingLabelKey === key;
+          const isSavingLabel = savingLabelKey === key;
 
           return (
-            <div key={hub.key} className={`border rounded-2xl p-5 space-y-4 relative ${cardBgClass}`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold">{hub.label}</h3>
-                  <p className="text-[11px] opacity-50">{hub.desc}</p>
+            <div key={key} className={`border rounded-2xl p-5 space-y-4 relative ${cardBgClass}`}>
+              {/* Hub label row with Edit icon */}
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold truncate">{curLabel.title}</h3>
+                  <p className="text-[11px] opacity-50 truncate">{curLabel.description}</p>
                 </div>
-                {isUploading && (
-                  <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-lime/20 text-lime text-[10px] font-bold animate-pulse border border-lime/40">
-                    <Upload className="w-3 h-3 animate-bounce" />
-                    <span>Uploading…</span>
-                  </span>
-                )}
+                <div className="flex items-center gap-1.5 shrink-0">
+                  {isUploading && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-lime/20 text-lime text-[10px] font-bold animate-pulse border border-lime/40">
+                      <Upload className="w-2.5 h-2.5 animate-bounce" />
+                      <span>…</span>
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => isEditingLabel ? (setEditingLabelKey(null), setLabelDraft(null)) : handleStartLabelEdit(key)}
+                    className="p-1.5 rounded-lg border border-lime/30 text-lime hover:bg-lime/20 transition-all"
+                    title={isEditingLabel ? 'Cancel edit' : 'Edit card texts'}
+                  >
+                    {isEditingLabel ? <X className="w-3.5 h-3.5" /> : <Edit3 className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
               </div>
+
+              {/* Inline text editor */}
+              {isEditingLabel && labelDraft && (
+                <div className={`space-y-2 border rounded-xl p-3 ${isLight ? 'bg-gray-50 border-lime/30' : 'bg-forest/30 border-lime/20'}`}>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase opacity-60 block mb-1">Card Title</label>
+                    <input
+                      autoFocus
+                      type="text"
+                      value={labelDraft.title}
+                      onChange={(e) => setLabelDraft({ ...labelDraft, title: e.target.value })}
+                      className={`w-full px-2.5 py-1.5 rounded-lg text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-lime ${inputBgClass}`}
+                      placeholder="e.g. Systems Lab"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase opacity-60 block mb-1">Description</label>
+                    <input
+                      type="text"
+                      value={labelDraft.description}
+                      onChange={(e) => setLabelDraft({ ...labelDraft, description: e.target.value })}
+                      className={`w-full px-2.5 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-lime ${inputBgClass}`}
+                      placeholder="e.g. Hardware & distributed infrastructure"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase opacity-60 block mb-1">Photo Caption (user page)</label>
+                    <input
+                      type="text"
+                      value={labelDraft.caption}
+                      onChange={(e) => setLabelDraft({ ...labelDraft, caption: e.target.value })}
+                      className={`w-full px-2.5 py-1.5 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-lime ${inputBgClass}`}
+                      placeholder="e.g. Innovation Lab"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isSavingLabel}
+                    onClick={() => handleSaveLabel(key)}
+                    className="flex items-center gap-1.5 w-full justify-center py-1.5 rounded-xl bg-lime text-forest font-bold text-xs cursor-pointer disabled:opacity-50"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>{isSavingLabel ? 'Saving to Supabase…' : 'Save Label'}</span>
+                  </button>
+                </div>
+              )}
 
               {/* Photo Frame with Live Preview */}
               <div className="h-48 rounded-xl overflow-hidden border border-forest/10 relative bg-forest-deep">
                 <img
                   key={displayUrl}
                   src={displayUrl}
-                  alt={hub.label}
+                  alt={curLabel.title}
                   className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = defaultWorkspaceImages[hub.key];
-                  }}
+                  onError={(e) => { (e.target as HTMLImageElement).src = defaultWorkspaceImages[key]; }}
                 />
                 {isUploading && (
                   <div className="absolute inset-0 bg-forest/80 backdrop-blur-sm flex flex-col items-center justify-center gap-2 text-lime">
@@ -4615,62 +4657,24 @@ function WorkspaceSection({
                     <span className="text-xs font-bold text-cream">Uploading to Supabase…</span>
                   </div>
                 )}
+                {/* Caption preview overlay */}
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-forest/80 to-transparent px-3 py-2">
+                  <span className="text-[10px] font-bold text-white">{curLabel.caption}</span>
+                </div>
               </div>
 
               {/* Device Upload Button */}
-              <div>
-                <label className={`flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-all shadow-sm ${
-                  isUploading
-                    ? 'bg-lime/30 text-forest/50 cursor-not-allowed'
-                    : 'bg-lime text-forest hover:bg-lime/90'
-                }`}>
-                  <Upload className="w-4 h-4" />
-                  <span>{isUploading ? 'Uploading to Supabase…' : 'Upload from Device'}</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    disabled={isUploading}
-                    onChange={(e) => handleFileChange(e, hub.key, hub.label)}
-                    className="hidden"
-                  />
-                </label>
-              </div>
-
-              {/* URL Input & Quick Save */}
-              <div className="space-y-1.5 pt-1 border-t border-forest/10">
-                <label className="text-[10px] font-semibold opacity-60 uppercase tracking-wider block">
-                  Image URL / Supabase Asset:
-                </label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={images[hub.key] || ''}
-                    onChange={(e) =>
-                      setImages((prev) => ({ ...prev, [hub.key]: e.target.value }))
-                    }
-                    placeholder="https://..."
-                    className={`flex-1 px-2.5 py-1.5 rounded-lg text-xs font-mono truncate focus:outline-none ${inputBgClass}`}
-                  />
-                  <button
-                    type="button"
-                    disabled={isSaving}
-                    onClick={() => handleDirectUrlSave(hub.key, hub.label)}
-                    className="px-2.5 py-1.5 rounded-lg bg-lime/20 border border-lime/30 text-lime hover:bg-lime/30 text-xs font-bold cursor-pointer disabled:opacity-50 shrink-0"
-                    title="Save this image URL to Supabase"
-                  >
-                    {isSaving ? '…' : 'Save'}
-                  </button>
-                </div>
-              </div>
+              <label className={`flex items-center justify-center gap-2 w-full px-4 py-2.5 rounded-xl text-xs font-semibold cursor-pointer transition-all shadow-sm ${isUploading ? 'bg-lime/30 text-forest/50 cursor-not-allowed' : 'bg-lime text-forest hover:bg-lime/90'}`}>
+                <Upload className="w-4 h-4" />
+                <span>{isUploading ? 'Uploading to Supabase…' : 'Upload from Device'}</span>
+                <input type="file" accept="image/*" disabled={isUploading} onChange={(e) => handleFileChange(e, key, curLabel.title)} className="hidden" />
+              </label>
             </div>
           );
         })}
       </div>
 
-      <button
-        type="submit"
-        className="px-6 py-3 rounded-xl bg-lime hover:bg-lime/90 text-forest font-semibold text-sm transition-all shadow-md cursor-pointer"
-      >
+      <button type="submit" className="px-6 py-3 rounded-xl bg-lime hover:bg-lime/90 text-forest font-semibold text-sm transition-all shadow-md cursor-pointer">
         Save All Workspace Photos to Supabase
       </button>
     </form>

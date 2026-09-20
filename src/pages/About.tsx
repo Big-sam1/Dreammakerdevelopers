@@ -132,11 +132,12 @@ export function About() {
         </div>
       </section>
 
-      {/* Sliding partner images — each partner displayed once without duplication */}
+      {/* Sliding partner images — scroll right-to-left, no visible duplicates, seamless loop */}
       <section className="border-y border-white/10 bg-forest py-8 overflow-hidden">
-        <div className="relative overflow-x-auto no-scrollbar w-full">
-          <div className="flex items-center gap-6 sm:gap-10 justify-center py-1 px-6 min-w-max mx-auto">
-            {uniquePartners.map((imgSrc, idx) => (
+        <div className="relative w-full overflow-hidden">
+          {/* Duplicate the unique list once so the marquee loops seamlessly */}
+          <div className="animate-marquee flex items-center gap-8">
+            {[...uniquePartners, ...uniquePartners].map((imgSrc, idx) => (
               <div
                 key={`${imgSrc}-${idx}`}
                 className="h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-full border-2 border-lime/40 bg-white/10 p-1 shadow-md transition-all hover:scale-110 hover:border-lime"
