@@ -54,7 +54,7 @@ import {
 } from '../../context/CMSContext';
 import { makeCircularFavicon, saveCmsStateToSupabase, uploadImageToSupabase } from '../../lib/supabase';
 import { BackToTop } from '../../components/BackToTop';
-import mapsImage from '../../data/maps.png';
+import mapsImage from '../../data/map.png';
 
 type TabType =
   | 'overview'
@@ -1033,7 +1033,7 @@ function OverviewSection({
         ))}
       </div>
 
-      {/* VIRTUAL WORLD MAP USING maps.jpg */}
+      {/* VIRTUAL WORLD MAP USING map.png */}
       <div className={`border rounded-2xl p-6 ${cardBgClass}`}>
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -1041,7 +1041,7 @@ function OverviewSection({
               {cms.sectionTitles?.mapTitle || 'Visitor Geo Distribution & Virtual Map'}
             </h2>
             <p className={`text-xs ${isLight ? 'text-gray-500' : 'text-cream/50'}`}>
-              Using official satellite & cartographic model from <code className="text-xs text-lime bg-forest px-1.5 py-0.5 rounded">src/data/maps.png</code>
+              Using official satellite & cartographic model from <code className="text-xs text-lime bg-forest px-1.5 py-0.5 rounded">src/data/map.png</code>
             </p>
           </div>
           <button
@@ -1091,7 +1091,7 @@ function OverviewSection({
 }
 
 /* =========================================================================
-   2. MAP BRANCHES & INTERACTIVE PINNING (Using src/data/maps.png)
+   2. MAP BRANCHES & INTERACTIVE PINNING (Using src/data/map.png)
    ========================================================================= */
 function MapBranchesSection({
   cms,
