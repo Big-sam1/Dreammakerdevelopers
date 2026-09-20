@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { TargetIcon, EyeIcon, Video, Phone, Mail } from 'lucide-react';
 import { PageHero } from '../components/PageHero';
 import { Eyebrow } from '../components/Eyebrow';
@@ -31,6 +31,51 @@ export function About() {
   const [videoFailed, setVideoFailed] = useState(false);
   // Reset failed state whenever the URL changes (new video uploaded)
   useEffect(() => { setVideoFailed(false); }, [workflow.videoUrl]);
+
+  // Scroll and cursor-driven horizontal movement for partner images (right-to-left effect)
+  const partnersSectionRef = useRef<HTMLElement>(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [cursorX, setCursorX] = useState(0);
+
+  useEffect(() => {
+    let ticking = false;
+
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          if (partnersSectionRef.current) {
+            const rect = partnersSectionRef.current.getBoundingClientRect();
+            const windowHeight = window.innerHeight;
+            const totalDistance = windowHeight + rect.height;
+            const currentPosition = windowHeight - rect.top;
+            const progress = Math.max(-0.2, Math.min(1.2, currentPosition / totalDistance));
+            setScrollProgress(progress);
+          }
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const handlePartnerMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relX = (e.clientX - rect.left) / rect.width;
+    setCursorX((relX - 0.5) * -100);
+  };
+
+  const handlePartnerMouseLeave = () => {
+    setCursorX(0);
+  };
+
+  // As the user scrolls down, scrollProgress increases from 0 to 1,
+  // continuously shifting the partners row from right (+180px) to left (-380px)
+  const partnerShiftX = Math.round(180 - (scrollProgress * 560) + cursorX);
 
   return (
     <>
@@ -190,10 +235,20 @@ export function About() {
         </div>
       </section>
 
-      {/* Sliding partner images — single list without duplication, sliding right to left */}
-      <section className="border-y border-white/10 bg-forest py-8 overflow-hidden">
+      {/* Sliding partner images — moves from right side to left side as user scrolls down or moves cursor */}
+      <section
+        ref={partnersSectionRef}
+        onMouseMove={handlePartnerMouseMove}
+        onMouseLeave={handlePartnerMouseLeave}
+        className="border-y border-white/10 bg-forest py-8 overflow-hidden select-none"
+      >
         <div className="relative w-full overflow-hidden">
-          <div className="animate-marquee-rtl flex items-center gap-8">
+          <div
+            className="flex items-center gap-8 transition-transform duration-150 ease-out will-change-transform"
+            style={{
+              transform: `translate3d(${partnerShiftX}px, 0, 0)`,
+            }}
+          >
             {uniquePartners.map((imgSrc, idx) => (
               <div
                 key={`${imgSrc}-${idx}`}
