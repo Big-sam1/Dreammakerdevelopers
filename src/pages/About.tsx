@@ -148,13 +148,6 @@ export function About() {
                     {/* Dark gradient overlay for clear contrast */}
                     <div className="absolute inset-0 bg-gradient-to-t from-forest-deep/95 via-forest-deep/60 to-forest-deep/20" />
 
-                    {/* Top specialty pill */}
-                    <div className="relative z-10 flex justify-end">
-                      <span className="px-2 py-0.5 rounded-full bg-lime text-forest text-[9px] font-bold tracking-wider uppercase shadow-sm">
-                        {member.specialty}
-                      </span>
-                    </div>
-
                     {/* Bottom member info & 2 action icons (Phone + Email) */}
                     <div className="relative z-10 text-left pt-2">
                       <h4 className="font-display text-sm font-bold text-white drop-shadow truncate">

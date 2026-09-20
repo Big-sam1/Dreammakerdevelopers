@@ -3298,10 +3298,16 @@ function TeamSection({
                 {/* Second Photo (Hover Expansion) & Contact Links */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-forest/10">
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-medium">Second Image (Hover):</label>
-                      <label className="text-[10px] text-lime hover:underline cursor-pointer">
-                        Upload
+                    <label className="text-xs font-medium block mb-1">Second Image (Hover):</label>
+                    <div className="flex items-center gap-2">
+                      {newMember.secondImage ? (
+                        <div className="w-9 h-9 rounded-lg overflow-hidden border border-lime shrink-0">
+                          <img src={newMember.secondImage} alt="Hover preview" className="w-full h-full object-cover" />
+                        </div>
+                      ) : null}
+                      <label className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-lime/20 text-lime hover:bg-lime/30 border border-lime/30 text-xs font-semibold cursor-pointer transition-colors">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{uploadingField === 'team-new-second' ? 'Uploading...' : (newMember.secondImage ? 'Replace 2nd Photo' : 'Upload from Device')}</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -3314,13 +3320,6 @@ function TeamSection({
                         />
                       </label>
                     </div>
-                    <input
-                      type="text"
-                      placeholder="Hover portrait URL"
-                      value={newMember.secondImage || ''}
-                      onChange={(e) => setNewMember({ ...newMember, secondImage: e.target.value })}
-                      className={`w-full px-3 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
-                    />
                   </div>
                   <div>
                     <label className="text-xs font-medium block mb-1">Phone Number (direct call):</label>
@@ -3463,10 +3462,16 @@ function TeamSection({
                 {/* Second Photo (Hover Expansion) & Contact Links */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-forest/10">
                   <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs font-medium">Second Image (Hover):</label>
-                      <label className="text-[10px] text-lime hover:underline cursor-pointer">
-                        Upload
+                    <label className="text-xs font-medium block mb-1">Second Image (Hover):</label>
+                    <div className="flex items-center gap-2">
+                      {editFormData.secondImage ? (
+                        <div className="w-9 h-9 rounded-lg overflow-hidden border border-lime shrink-0">
+                          <img src={editFormData.secondImage} alt="Hover preview" className="w-full h-full object-cover" />
+                        </div>
+                      ) : null}
+                      <label className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-lime/20 text-lime hover:bg-lime/30 border border-lime/30 text-xs font-semibold cursor-pointer transition-colors">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{uploadingField === `team-edit-second-${editingMemberIdx}` ? 'Uploading...' : (editFormData.secondImage ? 'Replace 2nd Photo' : 'Upload from Device')}</span>
                         <input
                           type="file"
                           accept="image/*"
@@ -3479,13 +3484,6 @@ function TeamSection({
                         />
                       </label>
                     </div>
-                    <input
-                      type="text"
-                      placeholder="Hover portrait URL"
-                      value={editFormData.secondImage || ''}
-                      onChange={(e) => setEditFormData({ ...editFormData, secondImage: e.target.value })}
-                      className={`w-full px-3 py-2 rounded-xl text-xs focus:outline-none ${inputBgClass}`}
-                    />
                   </div>
                   <div>
                     <label className="text-xs font-medium block mb-1">Phone Number (direct call):</label>
