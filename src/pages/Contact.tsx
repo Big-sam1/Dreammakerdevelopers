@@ -41,9 +41,9 @@ export function Contact() {
     ...(cms.workspaceImages || {}),
   };
   const defaultWorkspaceLabels = {
-    lab:    { caption: 'Innovation Lab' },
-    studio: { caption: 'Sprint Studio'  },
-    lounge: { caption: 'Design Lounge'  },
+    lab:    { title: 'Systems Lab',    description: 'Hardware & distributed infrastructure', caption: 'Innovation Lab' },
+    studio: { title: 'Design Studio',  description: 'Interface design and ergonomics suite', caption: 'Sprint Studio'  },
+    lounge: { title: 'Collab Lounge',  description: 'Client sprint rooms and demo staging',  caption: 'Design Lounge'  },
   };
   const workspaceLabels = {
     lab:    { ...defaultWorkspaceLabels.lab,    ...(cms.workspaceLabels?.lab    || {}) },
@@ -162,50 +162,28 @@ export function Contact() {
                   </span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  {/* Row 1, Col 1: Image 1 */}
-                  <div className="group relative h-28 sm:h-32 overflow-hidden rounded-2xl border border-forest/10 bg-forest/5 shadow-sm">
-                    <img
-                      key={workspaceImages.lab}
-                      src={workspaceImages.lab}
-                      alt="DMD Kagarama Innovation Lab"
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      onError={(e) => { (e.target as HTMLImageElement).src = defaultWorkspaceImages.lab; }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-forest/75 via-transparent to-transparent opacity-60" />
-                    <span className="absolute bottom-2 left-2 text-[10px] font-semibold text-white px-1.5 py-0.5 rounded bg-forest/80 backdrop-blur-sm">
-                      {workspaceLabels.lab.caption}
-                    </span>
-                  </div>
-
-                  {/* Row 1, Col 2: Image 2 */}
-                  <div className="group relative h-28 sm:h-32 overflow-hidden rounded-2xl border border-forest/10 bg-forest/5 shadow-sm">
-                    <img
-                      key={workspaceImages.studio}
-                      src={workspaceImages.studio}
-                      alt="Sprint Studio"
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      onError={(e) => { (e.target as HTMLImageElement).src = defaultWorkspaceImages.studio; }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-forest/75 via-transparent to-transparent opacity-60" />
-                    <span className="absolute bottom-2 left-2 text-[10px] font-semibold text-white px-1.5 py-0.5 rounded bg-forest/80 backdrop-blur-sm">
-                      {workspaceLabels.studio.caption}
-                    </span>
-                  </div>
-
-                  {/* Row 2, Col 1: Image 3 */}
-                  <div className="group relative h-28 sm:h-32 overflow-hidden rounded-2xl border border-forest/10 bg-forest/5 shadow-sm">
-                    <img
-                      key={workspaceImages.lounge}
-                      src={workspaceImages.lounge}
-                      alt="Design Lounge"
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      onError={(e) => { (e.target as HTMLImageElement).src = defaultWorkspaceImages.lounge; }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-forest/75 via-transparent to-transparent opacity-60" />
-                    <span className="absolute bottom-2 left-2 text-[10px] font-semibold text-white px-1.5 py-0.5 rounded bg-forest/80 backdrop-blur-sm">
-                      {workspaceLabels.lounge.caption}
-                    </span>
-                  </div>
+                  {/* Hub image cards — title, description and caption from admin CMS */}
+                  {(['lab', 'studio', 'lounge'] as const).map((key) => (
+                    <div key={key} className="group relative overflow-hidden rounded-2xl border border-forest/10 bg-forest/5 shadow-sm">
+                      <div className="relative h-28 sm:h-32 overflow-hidden">
+                        <img
+                          key={workspaceImages[key]}
+                          src={workspaceImages[key]}
+                          alt={workspaceLabels[key].title}
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          onError={(e) => { (e.target as HTMLImageElement).src = defaultWorkspaceImages[key]; }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-forest/75 via-transparent to-transparent opacity-70" />
+                        <span className="absolute bottom-2 left-2 text-[10px] font-semibold text-white px-1.5 py-0.5 rounded bg-forest/80 backdrop-blur-sm">
+                          {workspaceLabels[key].caption}
+                        </span>
+                      </div>
+                      <div className="px-3 py-2.5 bg-white/80 backdrop-blur-sm">
+                        <p className="text-[11px] font-bold text-forest leading-tight">{workspaceLabels[key].title}</p>
+                        <p className="text-[10px] text-forest/55 leading-tight mt-0.5">{workspaceLabels[key].description}</p>
+                      </div>
+                    </div>
+                  ))}
 
                   {/* Row 2, Col 2: Empty Green Container */}
                   <div className="relative h-28 sm:h-32 rounded-2xl bg-lime border border-lime-dark/30 shadow-sm transition-all hover:bg-lime-dark/90 flex items-center justify-center p-4">
