@@ -137,35 +137,35 @@ export function About() {
                     {member.specialty}
                   </span>
 
-                  {/* Cursor reach / hover: Expanded second image covering the whole container with 2 direct action icons */}
-                  <div className="absolute inset-0 z-10 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-500 ease-out flex flex-col justify-between p-4 overflow-hidden">
+                  {/* Cursor reach / hover: Expanded second image covering the whole container with 2 direct action icons positioned at the bottom */}
+                  <div className="absolute inset-0 z-10 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-500 ease-out flex flex-col justify-end p-3 sm:p-3.5 overflow-hidden">
                     {/* Background expanded secondary image */}
                     <img
                       src={hoverPhoto}
                       alt={member.name}
-                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                     />
-                    {/* Dark gradient overlay for clear contrast */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-forest-deep/95 via-forest-deep/60 to-forest-deep/20" />
+                    {/* Dark gradient overlay anchored at the bottom for clear contrast */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-forest-deep/95 via-forest-deep/65 to-transparent" />
 
-                    {/* Bottom member info & 2 action icons (Phone + Email) */}
-                    <div className="relative z-10 text-left pt-2">
-                      <h4 className="font-display text-sm font-bold text-white drop-shadow truncate">
+                    {/* Member info & 2 action icons (Phone + Email) positioned at the bottom with reduced icon sizes */}
+                    <div className="relative z-10 text-left">
+                      <h4 className="font-display text-xs sm:text-sm font-bold text-white drop-shadow truncate">
                         {member.name}
                       </h4>
-                      <p className="text-[11px] font-medium text-cream/80 drop-shadow truncate mt-0.5">
+                      <p className="text-[10px] sm:text-[11px] font-medium text-cream/75 drop-shadow truncate mt-0.5">
                         {member.role}
                       </p>
 
-                      <div className="flex items-center gap-2 mt-3 pt-2.5 border-t border-white/20">
+                      <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-white/20">
                         {phoneHref && (
                           <a
                             href={phoneHref}
                             onClick={(e) => e.stopPropagation()}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl bg-lime hover:bg-lime/90 text-forest font-bold text-[11px] transition-transform hover:scale-105 shadow cursor-pointer"
+                            className="flex-1 flex items-center justify-center gap-1 py-1 px-2 rounded-lg bg-lime hover:bg-lime/90 text-forest font-semibold text-[10px] transition-transform hover:scale-105 shadow-sm cursor-pointer"
                             title={member.phone ? `Call ${member.phone}` : `Call ${member.name}`}
                           >
-                            <Phone className="w-3.5 h-3.5" />
+                            <Phone className="w-2.5 h-2.5" />
                             <span>Call</span>
                           </a>
                         )}
@@ -173,10 +173,10 @@ export function About() {
                           <a
                             href={emailHref}
                             onClick={(e) => e.stopPropagation()}
-                            className="flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm font-bold text-[11px] transition-transform hover:scale-105 border border-white/30 shadow cursor-pointer"
+                            className="flex-1 flex items-center justify-center gap-1 py-1 px-2 rounded-lg bg-white/20 hover:bg-white/30 text-white backdrop-blur-sm font-semibold text-[10px] transition-transform hover:scale-105 border border-white/25 shadow-sm cursor-pointer"
                             title={member.email ? `Email ${member.email}` : `Email ${member.name}`}
                           >
-                            <Mail className="w-3.5 h-3.5 text-lime" />
+                            <Mail className="w-2.5 h-2.5 text-lime" />
                             <span>Email</span>
                           </a>
                         )}
